@@ -190,7 +190,7 @@ _ephyr_input_init_buttons(DeviceIntPtr device) {
     Atom buttonLabels[NUM_MOUSE_BUTTONS] = {0};
     int i;
 
-    map = calloc(NUM_MOUSE_BUTTONS, sizeof(CARD8));
+    map = calloc(NUM_MOUSE_BUTTONS + 1, sizeof(CARD8));
 
     for (i = 0; i < NUM_MOUSE_BUTTONS; i++) {
         map[i] = i;
