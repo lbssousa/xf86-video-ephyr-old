@@ -174,6 +174,8 @@ typedef struct EphyrPrivate {
     ShadowUpdateProc update;
 } EphyrPrivate, *EphyrPrivatePtr;
 
+Bool enable_ephyr_input;
+
 #define PEPHYR(p) ((EphyrPrivatePtr)((p)->driverPrivate))
 #define PCLIENTDATA(p) (PEPHYR(p)->clientData)
 
@@ -181,11 +183,16 @@ static pointer
 EphyrSetup(pointer module, pointer opts, int *errmaj, int *errmin) {
     static Bool setupDone = FALSE;
 
+    enable_ephyr_input = !SeatId;
+
     if (!setupDone) {
         setupDone = TRUE;
 
         xf86AddDriver(&EPHYR, module, HaveDriverFuncs);
-        xf86AddInputDriver(&EPHYRINPUT, module, 0);
+
+        if (enable_ephyr_input) {
+            xf86AddInputDriver(&EPHYRINPUT, module, 0);
+        }
 
         return (pointer)1;
     } else {
@@ -595,7 +602,9 @@ static Bool EphyrScreenInit(SCREEN_INIT_ARGS_DECL) {
     
     /* Schedule the EphyrInputLoadDriver function to load once the
      * input core is initialized. */
-    TimerSet(NULL, 0, 1, EphyrMouseTimer, pEphyr->clientData);
+    if (enable_ephyr_input) {
+       TimerSet(NULL, 0, 1, EphyrMouseTimer, pEphyr->clientData);
+    }
 
     miClearVisualTypes();
 
