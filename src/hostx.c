@@ -24,7 +24,7 @@
  */
 
 #ifdef HAVE_CONFIG_H
-#include <kdrive-config.h>
+#include "config.h"
 #endif
 
 #include "hostx.h"
@@ -419,9 +419,8 @@ hostx_set_title(char *title)
 #pragma does_not_return(exit)
 #endif
 
-int
-hostx_init(void)
-{
+Bool
+hostx_init(void) {
     uint32_t attrs[2];
     uint32_t attr_mask = 0;
     xcb_pixmap_t cursor_pxm;
@@ -446,24 +445,31 @@ hostx_init(void)
     attr_mask |= XCB_CW_EVENT_MASK;
 
     EPHYR_DBG("mark");
+
+/* XXX: GLAMOR support will be added later. */
 #ifdef GLAMOR
-    if (ephyr_glamor)
+    if (ephyr_glamor) {
         HostX.conn = ephyr_glamor_connect();
-    else
+    } else
 #endif
+    {
         HostX.conn = xcb_connect(NULL, &HostX.screen);
+    }
+
     if (!HostX.conn || xcb_connection_has_error(HostX.conn)) {
-        fprintf(stderr, "\nXephyr cannot open host display. Is DISPLAY set?\n");
-        exit(1);
+        return FALSE;
     }
 
     xscreen = xcb_aux_get_screen(HostX.conn, HostX.screen);
     HostX.winroot = xscreen->root;
     HostX.gc = xcb_generate_id(HostX.conn);
     HostX.depth = xscreen->root_depth;
+
+/* XXX: GLAMOR support will be added later. */
 #ifdef GLAMOR
     if (ephyr_glamor) {
         HostX.visual = ephyr_glamor_get_visual();
+
         if (HostX.visual->visual_id != xscreen->root_visual) {
             attrs[1] = xcb_generate_id(HostX.conn);
             attr_mask |= XCB_CW_COLORMAP;
@@ -475,7 +481,9 @@ hostx_init(void)
         }
     } else
 #endif
+    {
         HostX.visual = xcb_aux_find_visual_by_id(xscreen,xscreen->root_visual);
+    }
 
     xcb_create_gc(HostX.conn, HostX.gc, HostX.winroot, 0, NULL);
     cookie_WINDOW_STATE = xcb_intern_atom(HostX.conn, FALSE,
@@ -509,8 +517,7 @@ hostx_init(void)
             if (e) {
                 free(e);
                 free(prewin_geom);
-                fprintf (stderr, "\nXephyr -parent window' does not exist!\n");
-                exit (1);
+                return FALSE;
             }
 
             scrpriv->win_width  = prewin_geom->width;
@@ -530,8 +537,7 @@ hostx_init(void)
                               HostX.visual->visual_id,
                               attr_mask,
                               attrs);
-        }
-        else {
+        } else {
             xcb_create_window(HostX.conn,
                               XCB_COPY_FROM_PARENT,
                               scrpriv->win,
@@ -551,8 +557,7 @@ hostx_init(void)
                 scrpriv->win_height = xscreen->height_in_pixels;
 
                 hostx_set_fullscreen_hint();
-            }
-            else if (scrpriv->output) {
+            } else if (scrpriv->output) {
                 hostx_get_output_geometry(scrpriv->output,
                                           &scrpriv->win_x,
                                           &scrpriv->win_y,
@@ -563,15 +568,18 @@ hostx_init(void)
                 hostx_set_fullscreen_hint();
             }
 
-
             tmpstr = getenv("RESOURCE_NAME");
-            if (tmpstr && (!ephyrResNameFromCmd))
+
+            if (tmpstr && (!ephyrResNameFromCmd)) {
                 ephyrResName = tmpstr;
-            class_len = strlen(ephyrResName) + 1 + strlen("Xephyr") + 1;
+            }
+
+            class_len = strlen(ephyrResName) + 1 + strlen("Xorg") + 1;
             class_hint = malloc(class_len);
+
             if (class_hint) {
                 strcpy(class_hint, ephyrResName);
-                strcpy(class_hint + strlen(ephyrResName) + 1, "Xephyr");
+                strcpy(class_hint + strlen(ephyrResName) + 1, "Xorg");
                 xcb_change_property(HostX.conn,
                                     XCB_PROP_MODE_REPLACE,
                                     scrpriv->win,
@@ -626,8 +634,10 @@ hostx_init(void)
                       0,0,0,
                       1,1);
     xcb_free_pixmap(HostX.conn, cursor_pxm);
+
     if (!hostx_want_host_cursor ()) {
         CursorVisible = TRUE;
+
         /* Ditch the cursor, we provide our 'own' */
         for (index = 0; index < HostX.n_screens; index++) {
             KdScreenInfo *screen = HostX.screens[index];
@@ -644,8 +654,7 @@ hostx_init(void)
     if (!hostx_has_extension(&xcb_shm_id) || getenv("XEPHYR_NO_SHM")) {
         fprintf(stderr, "\nXephyr unable to use SHM XImages\n");
         HostX.have_shm = FALSE;
-    }
-    else {
+    } else {
         /* Really really check we have shm - better way ?*/
         xcb_shm_segment_info_t shminfo;
         xcb_generic_error_t *e;
@@ -675,7 +684,6 @@ hostx_init(void)
     xcb_flush(HostX.conn);
 
     /* Setup the pause time between paints when debugging updates */
-
     HostX.damage_debug_msec = 20000;    /* 1/50 th of a second */
 
     if (getenv("XEPHYR_PAUSE")) {
@@ -683,7 +691,7 @@ hostx_init(void)
         EPHYR_DBG("pause is %li\n", HostX.damage_debug_msec);
     }
 
-    return 1;
+    return TRUE;
 }
 
 int
@@ -922,6 +930,7 @@ hostx_screen_init(KdScreenInfo *screen,
     scrpriv->win_x = x;
     scrpriv->win_y = y;
 
+/* XXX: GLAMOR support will be added later. */
 #ifdef GLAMOR
     if (ephyr_glamor) {
         *bytes_per_line = 0;
@@ -962,6 +971,7 @@ hostx_paint_rect(KdScreenInfo *screen,
 
     EPHYR_DBG("painting in screen %d\n", scrpriv->mynum);
 
+/* XXX: GLAMOR support will be added later. */
 #ifdef GLAMOR
     if (ephyr_glamor) {
         BoxRec box;
@@ -1413,6 +1423,7 @@ hostx_get_resource_id_peer(int a_local_resource_id, int *a_remote_resource_id)
 
 #endif                          /* XF86DRI */
 
+/* XXX: GLAMOR support will be added later. */
 #ifdef GLAMOR
 Bool
 ephyr_glamor_init(ScreenPtr screen)

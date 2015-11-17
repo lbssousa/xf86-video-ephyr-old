@@ -49,8 +49,9 @@
 
 #include "compat-api.h"
 
-#include "client.h"
+#include "ephyr.h"
 #include "ephyr_input.h"
+#include "hostx.h"
 
 #define EPHYR_VERSION 0
 #define EPHYR_NAME "EPHYR"
@@ -220,7 +221,6 @@ EphyrProbe(DriverPtr drv, int flags) {
     int numDevSections;
     GDevPtr *devSections;
     int i;
-
     ScrnInfoPtr pScrn;
     int entityIndex;
 
@@ -391,7 +391,7 @@ EphyrPreInit(ScrnInfoPtr pScrn, int flags) {
 
     xf86ShowUnusedOptions(pScrn->scrnIndex, pScrn->options);
 
-    if (!EphyrClientCheckDisplay()) {
+    if (!hostx_init()) {
         xf86DrvMsg(pScrn->scrnIndex, X_ERROR, "Can't open display: %s\n",
                    pEphyr->displayName);
         return FALSE;
