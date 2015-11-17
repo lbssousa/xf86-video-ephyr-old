@@ -550,6 +550,11 @@ EphyrAddMode(ScrnInfoPtr pScrn, int width, int height) {
  * to force the initialization to wait until the input core is initialized. */
 static CARD32
 EphyrMouseTimer(OsTimerPtr timer, CARD32 time, pointer arg) {
+    if (timer) {
+        TimerFree(timer);
+        timer = NULL;
+    }
+
     EphyrInputLoadDriver(arg);
     return 0;
 }

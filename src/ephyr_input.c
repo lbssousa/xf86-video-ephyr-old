@@ -185,6 +185,7 @@ _ephyr_input_init_keyboard(DeviceIntPtr device) {
 }
 static int
 _ephyr_input_init_buttons(DeviceIntPtr device) {
+    int ret = Success;
     InputInfoPtr pInfo = device->public.devicePrivate;
     CARD8 *map;
     Atom buttonLabels[NUM_MOUSE_BUTTONS] = {0};
@@ -199,10 +200,11 @@ _ephyr_input_init_buttons(DeviceIntPtr device) {
     if (!InitButtonClassDeviceStruct(device, NUM_MOUSE_BUTTONS, buttonLabels, map)) {
         xf86Msg(X_ERROR, "%s: Failed to register buttons.\n", pInfo->name);
         free(map);
-        return BadAlloc;
+        ret = BadAlloc;
     }
 
-    return Success;
+    free(map);
+    return ret;
 }
 
 static int
@@ -230,6 +232,11 @@ ephyr_input_on(OsTimerPtr timer, CARD32 time, pointer arg) {
     DeviceIntPtr device = arg;
     InputInfoPtr pInfo = device->public.devicePrivate;
     EphyrInputDevicePtr pEphyrInput = pInfo->private;
+
+    if (timer) {
+        TimerFree(timer);
+        timer = NULL;
+    }
 
     if(device->public.on) {
         pInfo->fd = EphyrClientGetFileDescriptor(pEphyrInput->clientData);
@@ -299,6 +306,12 @@ static CARD32
 ephyr_input_ready(OsTimerPtr timer, CARD32 time, pointer arg) {
     EphyrClientPrivatePtr clientData = arg;
     EphyrClientCheckEvents(clientData);
+
+    if (timer) {
+        TimerFree(timer);
+        timer = NULL;
+    }
+
     return 0;
 }
 
@@ -317,8 +330,9 @@ EphyrInputLoadDriver(EphyrClientPrivatePtr clientData) {
 
     /* Create input options for our invocation to NewInputDeviceRequest. */
     InputOption* options = NULL;
-    options = input_option_new(options, strdup("identifier"), strdup("ephyrinput"));
-    options = input_option_new(options, strdup("driver"), strdup("ephyrinput"));
+    options = input_option_new(options, "Identifier", "Ephyr virtual generic input device");
+    options = input_option_new(options, "Driver", "ephyrinput");
+    options = input_option_new(options, "CorePointer", "on");
     
     /* Invoke NewInputDeviceRequest to call the PreInit function of
      * the driver. */
