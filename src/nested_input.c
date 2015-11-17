@@ -27,6 +27,7 @@
  * Colin Hill <colin.james.hill@gmail.com>
  * Weseung Hwang <weseung@gmail.com>
  * Nathaniel Way <nathanielcw@hotmail.com>
+ * Laércio de Sousa <laerciosousa@sme-mogidascruzes.sp.gov.br>
  */
 
 #include <errno.h>
@@ -59,26 +60,18 @@
 #define NUM_MOUSE_BUTTONS 6
 #define NUM_MOUSE_AXES 2
 
-static pointer
-NestedInputPlug(pointer module, pointer options, int *errmaj, int  *errmin);
-static void
-NestedInputUnplug(pointer p);
+static pointer NestedInputPlug(pointer module, pointer options, int *errmaj, int  *errmin);
+static void NestedInputUnplug(pointer p);
+static void NestedInputReadInput(InputInfoPtr pInfo);
+static int NestedInputControl(DeviceIntPtr device, int what);
 
-static void
-NestedInputReadInput(InputInfoPtr pInfo);
-static int
-NestedInputControl(DeviceIntPtr    device,int what);
-
-static int
-_nested_input_init_keyboard(DeviceIntPtr device);
-static int
-_nested_input_init_buttons(DeviceIntPtr device);
-static int
-_nested_input_init_axes(DeviceIntPtr device);
+static int _nested_input_init_keyboard(DeviceIntPtr device);
+static int _nested_input_init_buttons(DeviceIntPtr device);
+static int _nested_input_init_axes(DeviceIntPtr device);
 
 typedef struct _NestedInputDeviceRec {
     NestedClientPrivatePtr clientData;
-    int   version;
+    int version;
 } NestedInputDeviceRec, *NestedInputDevicePtr;
 
 static XF86ModuleVersionInfo NestedInputVersionRec = {
@@ -107,15 +100,15 @@ NestedInputPreInit(InputDriverPtr drv, InputInfoPtr pInfo, int flags) {
 
     pNestedInput = calloc(1, sizeof(NestedInputDeviceRec));
 
-    if (!pNestedInput)
+    if (!pNestedInput) {
         return BadAlloc;
+    }
 
     pInfo->private = pNestedInput;
-    pInfo->type_name = XI_MOUSE; // This is really both XI_MOUSE and XI_KEYBOARD... but oh well.
-    pInfo->read_input = NestedInputReadInput; // new data available.
-    pInfo->switch_mode = NULL; // Toggle absolute/relative mode.
-    pInfo->device_control = NestedInputControl; // Enable/disable device.
-
+    pInfo->type_name = XI_MOUSE; /* This is really both XI_MOUSE and XI_KEYBOARD... but oh well. */
+    pInfo->read_input = NestedInputReadInput; /* new data available. */
+    pInfo->switch_mode = NULL; /* Toggle absolute/relative mode. */
+    pInfo->device_control = NestedInputControl; /* Enable/disable device. */
     return Success;
 }
 
@@ -152,14 +145,17 @@ NestedInputUpdateKeymap(DeviceIntPtr device) {
         size_t i;
 
         keySyms.map = malloc(len * sizeof(KeySym));
+
         if (!keySyms.map) {
             xf86Msg(X_ERROR, "%s: Failed to get keyboard mappings.\n", pInfo->name);
             free(keymap64);
             return;
         }
 
-        for(i = 0; i < len; ++i)
+        for(i = 0; i < len; ++i) {
             keySyms.map[i] = keymap64[i];
+        }
+
         free(keymap64);
     }
 #endif
@@ -171,8 +167,9 @@ NestedInputUpdateKeymap(DeviceIntPtr device) {
 
     free(keySyms.map);
 
-    if (inputInfo.keyboard != device)
+    if (inputInfo.keyboard != device) {
         XkbCopyDeviceKeymap(inputInfo.keyboard, device);
+    }
 }
 
 static int
@@ -189,18 +186,18 @@ _nested_input_init_keyboard(DeviceIntPtr device) {
 static int
 _nested_input_init_buttons(DeviceIntPtr device) {
     InputInfoPtr pInfo = device->public.devicePrivate;
-    CARD8       *map;
-    Atom         buttonLabels[NUM_MOUSE_BUTTONS] = {0};
+    CARD8 *map;
+    Atom buttonLabels[NUM_MOUSE_BUTTONS] = {0};
+    int i;
 
     map = calloc(NUM_MOUSE_BUTTONS, sizeof(CARD8));
 
-    int i;
-    for (i = 0; i < NUM_MOUSE_BUTTONS; i++)
+    for (i = 0; i < NUM_MOUSE_BUTTONS; i++) {
         map[i] = i;
+    }
 
     if (!InitButtonClassDeviceStruct(device, NUM_MOUSE_BUTTONS, buttonLabels, map)) {
         xf86Msg(X_ERROR, "%s: Failed to register buttons.\n", pInfo->name);
-        
         free(map);
         return BadAlloc;
     }
@@ -210,15 +207,16 @@ _nested_input_init_buttons(DeviceIntPtr device) {
 
 static int
 _nested_input_init_axes(DeviceIntPtr device) {
+    int i;
+
     if (!InitValuatorClassDeviceStruct(device,
                                        NUM_MOUSE_AXES,
-                                       (Atom*)GetMotionHistory, // Not sure about this.
+                                       (Atom*)GetMotionHistory, /* Not sure about this. */
                                        GetMotionHistorySize(),
                                        (Atom)0)) {
         return BadAlloc;
     }
 
-    int i;
     for (i = 0; i < NUM_MOUSE_AXES; i++) {
         xf86InitValuatorAxisStruct(device, i, (Atom)0, -1, -1, 1, 1, 1, Absolute);
         xf86InitValuatorDefaults(device, i);
@@ -233,12 +231,12 @@ nested_input_on(OsTimerPtr timer, CARD32 time, pointer arg) {
     InputInfoPtr pInfo = device->public.devicePrivate;
     NestedInputDevicePtr pNestedInput = pInfo->private;
 
-    if(device->public.on)
-    {
+    if(device->public.on) {
         pInfo->fd = NestedClientGetFileDescriptor(pNestedInput->clientData);
         xf86FlushInput(pInfo->fd);
         xf86AddEnabledDevice(pInfo);
     }
+
     return 0;
 }
 
@@ -248,42 +246,50 @@ NestedInputControl(DeviceIntPtr device, int what) {
     InputInfoPtr pInfo = device->public.devicePrivate;
 
     switch (what) {
-        case DEVICE_INIT:
-            err = _nested_input_init_keyboard(device);
-            if (err != Success)
-                return err;
+    case DEVICE_INIT:
+        err = _nested_input_init_keyboard(device);
 
-            err = _nested_input_init_buttons(device);
-            if (err != Success)
-                return err;
+        if (err != Success) {
+            return err;
+        }
 
-            err = _nested_input_init_axes(device);
-            if (err != Success)
-                return err;
+        err = _nested_input_init_buttons(device);
 
-            break;
-        case DEVICE_ON:
-            xf86Msg(X_INFO, "%s: On.\n", pInfo->name);
-            
-            if (device->public.on)
-                break;
+        if (err != Success) {
+            return err;
+        }
 
-            device->public.on = TRUE;
-            TimerSet(NULL, 0, 1, nested_input_on, device);
+        err = _nested_input_init_axes(device);
+
+        if (err != Success) {
+            return err;
+        }
+
+        break;
+    case DEVICE_ON:
+        xf86Msg(X_INFO, "%s: On.\n", pInfo->name);
+        
+        if (device->public.on) {
             break;
-        case DEVICE_OFF:
-            xf86Msg(X_INFO, "%s: Off.\n", pInfo->name);
-            
-            if (!device->public.on)
-                break;
-            
-            xf86RemoveEnabledDevice(pInfo);
-            
-            pInfo->fd = -1;
-            device->public.on = FALSE;
+        }
+
+        device->public.on = TRUE;
+        TimerSet(NULL, 0, 1, nested_input_on, device);
+        break;
+    case DEVICE_OFF:
+        xf86Msg(X_INFO, "%s: Off.\n", pInfo->name);
+
+        if (!device->public.on) {
             break;
-        case DEVICE_CLOSE:
-            break;
+        }
+
+        xf86RemoveEnabledDevice(pInfo);
+
+        pInfo->fd = -1;
+        device->public.on = FALSE;
+        break;
+    case DEVICE_CLOSE:
+        break;
     }
 
     return Success;
@@ -302,54 +308,21 @@ NestedInputReadInput(InputInfoPtr pInfo) {
     TimerSet(NULL, 0, 1, nested_input_ready, pNestedInput->clientData);
 }
 
-#if GET_ABI_MAJOR(ABI_XINPUT_VERSION) < 14
-static InputOption*
-input_option_new(InputOption* list, char *key, char *value)
-{
-    InputOption *tmp;
-
-    tmp = calloc(1, sizeof(*tmp));
-    tmp->key = key;
-    tmp->value = value;
-    tmp->next = list;
-
-    return tmp;
-}
-
-static void
-input_option_free_list(InputOption **list)
-{
-    InputOption *iopts = *list;
-
-    while(iopts)
-    {
-        InputOption *tmp = iopts->next;
-        free(iopts->key);
-        free(iopts->value);
-        free(iopts);
-        iopts = tmp;
-    }
-
-    *list = NULL;
-}
-#endif
-
-
 void
 NestedInputLoadDriver(NestedClientPrivatePtr clientData) {
     DeviceIntPtr dev;
     InputInfoPtr pInfo;
     NestedInputDevicePtr pNestedInput;
+    int ret;
 
-    // Create input options for our invocation to NewInputDeviceRequest.   
+    /* Create input options for our invocation to NewInputDeviceRequest. */
     InputOption* options = NULL;
     options = input_option_new(options, strdup("identifier"), strdup("nestedinput"));
     options = input_option_new(options, strdup("driver"), strdup("nestedinput"));
     
-    // Invoke NewInputDeviceRequest to call the PreInit function of
-    // the driver.
-    int ret = NewInputDeviceRequest(options, NULL, &dev);
-
+    /* Invoke NewInputDeviceRequest to call the PreInit function of
+     * the driver. */
+    ret = NewInputDeviceRequest(options, NULL, &dev);
     input_option_free_list(&options);
 
     if (ret != Success) {
@@ -360,14 +333,14 @@ NestedInputLoadDriver(NestedClientPrivatePtr clientData) {
     pNestedInput = pInfo->private;
     pNestedInput->clientData = clientData;
 
-    // Set our keymap to be the same as the server's
+    /* Set our keymap to be the same as the server's */
     NestedInputUpdateKeymap(dev);
 
-    // Send the device to the client so that the client can send the
-    // device back to the input driver when events are being posted.
+    /* Send the device to the client so that the client can send the
+     * device back to the input driver when events are being posted. */
     NestedClientSetDevicePtr(clientData, dev);
 }
-    
+
 void
 NestedInputPostMouseMotionEvent(DeviceIntPtr dev, int x, int y) {
     xf86PostMotionEvent(dev, TRUE, 0, 2, x, y);
