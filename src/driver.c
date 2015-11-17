@@ -96,6 +96,7 @@ void EphyrPrintMode(ScrnInfoPtr p, DisplayModePtr m);
 
 typedef enum {
     OPTION_DISPLAY,
+    OPTION_XAUTHORITY,
     OPTION_ORIGIN
 } EphyrOpts;
 
@@ -112,9 +113,10 @@ static SymTabRec EphyrChipsets[] = {
  * port EphyrClient to something that's not Xlib/Xcb we might need to add some
  * custom options */
 static OptionInfoRec EphyrOptions[] = {
-    { OPTION_DISPLAY, "Display", OPTV_STRING, {0}, FALSE },
-    { OPTION_ORIGIN,  "Origin",  OPTV_STRING, {0}, FALSE },
-    { -1,             NULL,      OPTV_NONE,   {0}, FALSE }
+    { OPTION_DISPLAY,    "Display",    OPTV_STRING, {0}, FALSE },
+    { OPTION_XAUTHORITY, "Xauthority", OPTV_STRING, {0}, FALSE },
+    { OPTION_ORIGIN,     "Origin",     OPTV_STRING, {0}, FALSE },
+    { -1,                NULL,         OPTV_NONE,   {0}, FALSE }
 };
 
 _X_EXPORT DriverRec EPHYR = {
@@ -325,6 +327,9 @@ EphyrPreInit(ScrnInfoPtr pScrn, int flags) {
     }
 
     pEphyr = PEPHYR(pScrn);
+    pEphyr->displayName = NULL;
+    pEphyr->originX = 0;
+    pEphyr->originY = 0;
 
     if (!xf86SetDepthBpp(pScrn, 0, 0, 0, Support24bppFb | Support32bppFb)) {
         return FALSE;
@@ -354,15 +359,19 @@ EphyrPreInit(ScrnInfoPtr pScrn, int flags) {
                                                    OPTION_DISPLAY);
         xf86DrvMsg(pScrn->scrnIndex, X_INFO, "Using display \"%s\"\n",
                    pEphyr->displayName);
-    } else {
-        pEphyr->displayName = NULL;
+    }
+
+    if (xf86IsOptionSet(EphyrOptions, OPTION_XAUTHORITY)) {
+        setenv("XAUTHORITY",
+               xf86GetOptValString(EphyrOptions,
+                                   OPTION_XAUTHORITY), 1);
     }
 
     if (xf86IsOptionSet(EphyrOptions, OPTION_ORIGIN)) {
         originString = xf86GetOptValString(EphyrOptions, OPTION_ORIGIN);
 
         if (sscanf(originString, "%d %d", &pEphyr->originX,
-            &pEphyr->originY) != 2) {
+                   &pEphyr->originY) != 2) {
             xf86DrvMsg(pScrn->scrnIndex, X_ERROR,
                        "Invalid value for option \"Origin\"\n");
             return FALSE;
@@ -370,9 +379,6 @@ EphyrPreInit(ScrnInfoPtr pScrn, int flags) {
 
         xf86DrvMsg(pScrn->scrnIndex, X_INFO, "Using origin x:%d y:%d\n",
                    pEphyr->originX, pEphyr->originY);
-    } else {
-        pEphyr->originX = 0;
-        pEphyr->originY = 0;
     }
 
     xf86ShowUnusedOptions(pScrn->scrnIndex, pScrn->options);
