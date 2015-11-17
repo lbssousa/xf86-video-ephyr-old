@@ -165,7 +165,6 @@ _X_EXPORT XF86ModuleData ephyrModuleData = {
 
 /* These stuff should be valid to all server generations */
 typedef struct EphyrPrivate {
-    char *displayName;
     int originX;
     int originY;
     EphyrClientPrivatePtr clientData;
@@ -320,6 +319,7 @@ EphyrFreePrivate(ScrnInfoPtr pScrn) {
 static Bool
 EphyrPreInit(ScrnInfoPtr pScrn, int flags) {
     EphyrPrivatePtr pEphyr;
+    const char *displayName = getenv("DISPLAY");
     char *originString = NULL;
 
     xf86DrvMsg(pScrn->scrnIndex, X_INFO, "EphyrPreInit\n");
@@ -362,10 +362,11 @@ EphyrPreInit(ScrnInfoPtr pScrn, int flags) {
     xf86ProcessOptions(pScrn->scrnIndex, pScrn->options, EphyrOptions);
 
     if (xf86IsOptionSet(EphyrOptions, OPTION_DISPLAY)) {
-        pEphyr->displayName = xf86GetOptValString(EphyrOptions,
-                                                   OPTION_DISPLAY);
+        displayName = xf86GetOptValString(EphyrOptions,
+                                          OPTION_DISPLAY);
         xf86DrvMsg(pScrn->scrnIndex, X_INFO, "Using display \"%s\"\n",
-                   pEphyr->displayName);
+                   displayName);
+        setenv("DISPLAY", displayName, 1);
     }
 
     if (xf86IsOptionSet(EphyrOptions, OPTION_XAUTHORITY)) {
@@ -390,7 +391,7 @@ EphyrPreInit(ScrnInfoPtr pScrn, int flags) {
 
     xf86ShowUnusedOptions(pScrn->scrnIndex, pScrn->options);
 
-    if (!EphyrClientCheckDisplay(pEphyr->displayName)) {
+    if (!EphyrClientCheckDisplay()) {
         xf86DrvMsg(pScrn->scrnIndex, X_ERROR, "Can't open display: %s\n",
                    pEphyr->displayName);
         return FALSE;
@@ -586,7 +587,6 @@ static Bool EphyrScreenInit(SCREEN_INIT_ARGS_DECL) {
     pEphyr = PEPHYR(pScrn);
     EphyrPrintPscreen(pScrn);
     pEphyr->clientData = EphyrClientCreateScreen(pScrn->scrnIndex,
-                                                 pEphyr->displayName,
                                                  pScrn->virtualX,
                                                  pScrn->virtualY,
                                                  pEphyr->originX,
