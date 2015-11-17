@@ -294,7 +294,7 @@ EphyrAllocatePrivate(ScrnInfoPtr pScrn) {
         return FALSE;
     }
 
-    pScrn->driverPrivate = xnfcalloc(sizeof(EphyrPrivate), 1);
+    pScrn->driverPrivate = xnfcalloc(sizeof(EphyrScrPriv), 1);
 
     if (pScrn->driverPrivate == NULL) {
         return FALSE;
