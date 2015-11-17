@@ -50,140 +50,140 @@
 #include "compat-api.h"
 
 #include "client.h"
-#include "nested_input.h"
+#include "ephyr_input.h"
 
-#define NESTED_VERSION 0
-#define NESTED_NAME "NESTED"
-#define NESTED_DRIVER_NAME "nested"
+#define EPHYR_VERSION 0
+#define EPHYR_NAME "EPHYR"
+#define EPHYR_DRIVER_NAME "ephyr"
 
-#define NESTED_MAJOR_VERSION PACKAGE_VERSION_MAJOR
-#define NESTED_MINOR_VERSION PACKAGE_VERSION_MINOR
-#define NESTED_PATCHLEVEL PACKAGE_VERSION_PATCHLEVEL
+#define EPHYR_MAJOR_VERSION PACKAGE_VERSION_MAJOR
+#define EPHYR_MINOR_VERSION PACKAGE_VERSION_MINOR
+#define EPHYR_PATCHLEVEL PACKAGE_VERSION_PATCHLEVEL
 
 #define TIMER_CALLBACK_INTERVAL 20
 
-static MODULESETUPPROTO(NestedSetup);
-static void NestedIdentify(int flags);
-static const OptionInfoRec *NestedAvailableOptions(int chipid, int busid);
-static Bool NestedProbe(DriverPtr drv, int flags);
-static Bool NestedDriverFunc(ScrnInfoPtr pScrn, xorgDriverFuncOp op,
-                             pointer ptr);
+static MODULESETUPPROTO(EphyrSetup);
+static void EphyrIdentify(int flags);
+static const OptionInfoRec *EphyrAvailableOptions(int chipid, int busid);
+static Bool EphyrProbe(DriverPtr drv, int flags);
+static Bool EphyrDriverFunc(ScrnInfoPtr pScrn, xorgDriverFuncOp op,
+                            pointer ptr);
 
-static Bool NestedPreInit(ScrnInfoPtr pScrn, int flags);
-static Bool NestedScreenInit(SCREEN_INIT_ARGS_DECL);
+static Bool EphyrPreInit(ScrnInfoPtr pScrn, int flags);
+static Bool EphyrScreenInit(SCREEN_INIT_ARGS_DECL);
 
-static Bool NestedSwitchMode(SWITCH_MODE_ARGS_DECL);
-static void NestedAdjustFrame(ADJUST_FRAME_ARGS_DECL);
-static Bool NestedEnterVT(VT_FUNC_ARGS_DECL);
-static void NestedLeaveVT(VT_FUNC_ARGS_DECL);
-static void NestedFreeScreen(FREE_SCREEN_ARGS_DECL);
-static ModeStatus NestedValidMode(SCRN_ARG_TYPE arg, DisplayModePtr mode,
-                                  Bool verbose, int flags);
+static Bool EphyrSwitchMode(SWITCH_MODE_ARGS_DECL);
+static void EphyrAdjustFrame(ADJUST_FRAME_ARGS_DECL);
+static Bool EphyrEnterVT(VT_FUNC_ARGS_DECL);
+static void EphyrLeaveVT(VT_FUNC_ARGS_DECL);
+static void EphyrFreeScreen(FREE_SCREEN_ARGS_DECL);
+static ModeStatus EphyrValidMode(SCRN_ARG_TYPE arg, DisplayModePtr mode,
+                                 Bool verbose, int flags);
 
-static Bool NestedSaveScreen(ScreenPtr pScreen, int mode);
-static Bool NestedCreateScreenResources(ScreenPtr pScreen);
+static Bool EphyrSaveScreen(ScreenPtr pScreen, int mode);
+static Bool EphyrCreateScreenResources(ScreenPtr pScreen);
 
-static void NestedShadowUpdate(ScreenPtr pScreen, shadowBufPtr pBuf);
-static Bool NestedCloseScreen(CLOSE_SCREEN_ARGS_DECL);
+static void EphyrShadowUpdate(ScreenPtr pScreen, shadowBufPtr pBuf);
+static Bool EphyrCloseScreen(CLOSE_SCREEN_ARGS_DECL);
 
-static void NestedBlockHandler(pointer data, OSTimePtr wt, pointer LastSelectMask);
-static void NestedWakeupHandler(pointer data, int i, pointer LastSelectMask);
+static void EphyrBlockHandler(pointer data, OSTimePtr wt, pointer LastSelectMask);
+static void EphyrWakeupHandler(pointer data, int i, pointer LastSelectMask);
 
-int NestedValidateModes(ScrnInfoPtr pScrn);
-Bool NestedAddMode(ScrnInfoPtr pScrn, int width, int height);
-void NestedPrintPscreen(ScrnInfoPtr p);
-void NestedPrintMode(ScrnInfoPtr p, DisplayModePtr m);
+int EphyrValidateModes(ScrnInfoPtr pScrn);
+Bool EphyrAddMode(ScrnInfoPtr pScrn, int width, int height);
+void EphyrPrintPscreen(ScrnInfoPtr p);
+void EphyrPrintMode(ScrnInfoPtr p, DisplayModePtr m);
 
 typedef enum {
     OPTION_DISPLAY,
     OPTION_ORIGIN
-} NestedOpts;
+} EphyrOpts;
 
 typedef enum {
-    NESTED_CHIP
-} NestedType;
+    EPHYR_CHIP
+} EphyrType;
 
-static SymTabRec NestedChipsets[] = {
-    { NESTED_CHIP, "nested" },
-    {-1,            NULL }
+static SymTabRec EphyrChipsets[] = {
+    { EPHYR_CHIP, "ephyr" },
+    {-1,          NULL }
 };
 
-/* XXX: Shouldn't we allow NestedClient to define options too? If some day we
- * port NestedClient to something that's not Xlib/Xcb we might need to add some
+/* XXX: Shouldn't we allow EphyrClient to define options too? If some day we
+ * port EphyrClient to something that's not Xlib/Xcb we might need to add some
  * custom options */
-static OptionInfoRec NestedOptions[] = {
+static OptionInfoRec EphyrOptions[] = {
     { OPTION_DISPLAY, "Display", OPTV_STRING, {0}, FALSE },
     { OPTION_ORIGIN,  "Origin",  OPTV_STRING, {0}, FALSE },
     { -1,             NULL,      OPTV_NONE,   {0}, FALSE }
 };
 
-_X_EXPORT DriverRec NESTED = {
-    NESTED_VERSION,
-    NESTED_DRIVER_NAME,
-    NestedIdentify,
-    NestedProbe,
-    NestedAvailableOptions,
+_X_EXPORT DriverRec EPHYR = {
+    EPHYR_VERSION,
+    EPHYR_DRIVER_NAME,
+    EphyrIdentify,
+    EphyrProbe,
+    EphyrAvailableOptions,
     NULL, /* module */
     0,    /* refCount */
-    NestedDriverFunc,
+    EphyrDriverFunc,
     NULL, /* DeviceMatch */
     0     /* PciProbe */
 };
 
-_X_EXPORT InputDriverRec NESTEDINPUT = {
+_X_EXPORT InputDriverRec EPHYRINPUT = {
     1,
-    "nestedinput",
+    "ephyrinput",
     NULL,
-    NestedInputPreInit,
-    NestedInputUnInit,
+    EphyrInputPreInit,
+    EphyrInputUnInit,
     NULL,
     0,
 };
 
-static XF86ModuleVersionInfo NestedVersRec = {
-    NESTED_DRIVER_NAME,
+static XF86ModuleVersionInfo EphyrVersRec = {
+    EPHYR_DRIVER_NAME,
     MODULEVENDORSTRING,
     MODINFOSTRING1,
     MODINFOSTRING2,
     XORG_VERSION_CURRENT,
-    NESTED_MAJOR_VERSION,
-    NESTED_MINOR_VERSION,
-    NESTED_PATCHLEVEL,
+    EPHYR_MAJOR_VERSION,
+    EPHYR_MINOR_VERSION,
+    EPHYR_PATCHLEVEL,
     ABI_CLASS_VIDEODRV,
     ABI_VIDEODRV_VERSION,
     MOD_CLASS_VIDEODRV,
     {0, 0, 0, 0} /* checksum */
 };
 
-_X_EXPORT XF86ModuleData nestedModuleData = {
-    &NestedVersRec,
-    NestedSetup,
+_X_EXPORT XF86ModuleData ephyrModuleData = {
+    &EphyrVersRec,
+    EphyrSetup,
     NULL, /* teardown */
 };
 
 /* These stuff should be valid to all server generations */
-typedef struct NestedPrivate {
-    char                        *displayName;
-    int                          originX;
-    int                          originY;
-    NestedClientPrivatePtr       clientData;
+typedef struct EphyrPrivate {
+    char *displayName;
+    int originX;
+    int originY;
+    EphyrClientPrivatePtr clientData;
     CreateScreenResourcesProcPtr CreateScreenResources;
-    CloseScreenProcPtr           CloseScreen;
-    ShadowUpdateProc             update;
-} NestedPrivate, *NestedPrivatePtr;
+    CloseScreenProcPtr CloseScreen;
+    ShadowUpdateProc update;
+} EphyrPrivate, *EphyrPrivatePtr;
 
-#define PNESTED(p)    ((NestedPrivatePtr)((p)->driverPrivate))
-#define PCLIENTDATA(p) (PNESTED(p)->clientData)
+#define PEPHYR(p) ((EphyrPrivatePtr)((p)->driverPrivate))
+#define PCLIENTDATA(p) (PEPHYR(p)->clientData)
 
 static pointer
-NestedSetup(pointer module, pointer opts, int *errmaj, int *errmin) {
+EphyrSetup(pointer module, pointer opts, int *errmaj, int *errmin) {
     static Bool setupDone = FALSE;
 
     if (!setupDone) {
         setupDone = TRUE;
 
-        xf86AddDriver(&NESTED, module, HaveDriverFuncs);
-        xf86AddInputDriver(&NESTEDINPUT, module, 0);
+        xf86AddDriver(&EPHYR, module, HaveDriverFuncs);
+        xf86AddInputDriver(&EPHYRINPUT, module, 0);
 
         return (pointer)1;
     } else {
@@ -196,18 +196,18 @@ NestedSetup(pointer module, pointer opts, int *errmaj, int *errmin) {
 }
 
 static void
-NestedIdentify(int flags) {
-    xf86PrintChipsets(NESTED_NAME, "Driver for nested servers",
-                      NestedChipsets);
+EphyrIdentify(int flags) {
+    xf86PrintChipsets(EPHYR_NAME, "Driver for nested servers",
+                      EphyrChipsets);
 }
 
 static const OptionInfoRec *
-NestedAvailableOptions(int chipid, int busid) {
-    return NestedOptions;
+EphyrAvailableOptions(int chipid, int busid) {
+    return EphyrOptions;
 }
 
 static Bool
-NestedProbe(DriverPtr drv, int flags) {
+EphyrProbe(DriverPtr drv, int flags) {
     Bool foundScreen = FALSE;
     int numDevSections;
     GDevPtr *devSections;
@@ -220,7 +220,7 @@ NestedProbe(DriverPtr drv, int flags) {
         return FALSE;
     }
 
-    if ((numDevSections = xf86MatchDevice(NESTED_DRIVER_NAME,
+    if ((numDevSections = xf86MatchDevice(EPHYR_DRIVER_NAME,
                                           &devSections)) <= 0) {
         return FALSE;
     }
@@ -228,24 +228,24 @@ NestedProbe(DriverPtr drv, int flags) {
     if (numDevSections > 0) {
         for(i = 0; i < numDevSections; i++) {
             pScrn = NULL;
-            entityIndex = xf86ClaimNoSlot(drv, NESTED_CHIP, devSections[i],
+            entityIndex = xf86ClaimNoSlot(drv, EPHYR_CHIP, devSections[i],
                                           TRUE);
             pScrn = xf86AllocateScreen(drv, 0);
 
             if (pScrn) {
                 xf86AddEntityToScreen(pScrn, entityIndex);
-                pScrn->driverVersion = NESTED_VERSION;
-                pScrn->driverName    = NESTED_DRIVER_NAME;
-                pScrn->name          = NESTED_NAME;
-                pScrn->Probe         = NestedProbe;
-                pScrn->PreInit       = NestedPreInit;
-                pScrn->ScreenInit    = NestedScreenInit;
-                pScrn->SwitchMode    = NestedSwitchMode;
-                pScrn->AdjustFrame   = NestedAdjustFrame;
-                pScrn->EnterVT       = NestedEnterVT;
-                pScrn->LeaveVT       = NestedLeaveVT;
-                pScrn->FreeScreen    = NestedFreeScreen;
-                pScrn->ValidMode     = NestedValidMode;
+                pScrn->driverVersion = EPHYR_VERSION;
+                pScrn->driverName = EPHYR_DRIVER_NAME;
+                pScrn->name = EPHYR_NAME;
+                pScrn->Probe = EphyrProbe;
+                pScrn->PreInit = EphyrPreInit;
+                pScrn->ScreenInit = EphyrScreenInit;
+                pScrn->SwitchMode = EphyrSwitchMode;
+                pScrn->AdjustFrame = EphyrAdjustFrame;
+                pScrn->EnterVT = EphyrEnterVT;
+                pScrn->LeaveVT = EphyrLeaveVT;
+                pScrn->FreeScreen = EphyrFreeScreen;
+                pScrn->ValidMode = EphyrValidMode;
                 foundScreen = TRUE;
             }
         }
@@ -260,9 +260,9 @@ NestedProbe(DriverPtr drv, int flags) {
 #endif
 
 static Bool
-NestedDriverFunc(ScrnInfoPtr pScrn, xorgDriverFuncOp op, pointer ptr) {
+EphyrDriverFunc(ScrnInfoPtr pScrn, xorgDriverFuncOp op, pointer ptr) {
     CARD32 *flag;
-    xf86Msg(X_INFO, "NestedDriverFunc\n");
+    xf86Msg(X_INFO, "EphyrDriverFunc\n");
 
     /* XXX implement */
     switch(op) {
@@ -279,14 +279,14 @@ NestedDriverFunc(ScrnInfoPtr pScrn, xorgDriverFuncOp op, pointer ptr) {
 }
 
 static Bool
-NestedAllocatePrivate(ScrnInfoPtr pScrn) {
+EphyrAllocatePrivate(ScrnInfoPtr pScrn) {
     if (pScrn->driverPrivate != NULL) {
-        xf86Msg(X_WARNING, "NestedAllocatePrivate called for an already "
+        xf86Msg(X_WARNING, "EphyrAllocatePrivate called for an already "
                 "allocated private!\n");
         return FALSE;
     }
 
-    pScrn->driverPrivate = xnfcalloc(sizeof(NestedPrivate), 1);
+    pScrn->driverPrivate = xnfcalloc(sizeof(EphyrPrivate), 1);
 
     if (pScrn->driverPrivate == NULL) {
         return FALSE;
@@ -296,10 +296,10 @@ NestedAllocatePrivate(ScrnInfoPtr pScrn) {
 }
 
 static void
-NestedFreePrivate(ScrnInfoPtr pScrn) {
+EphyrFreePrivate(ScrnInfoPtr pScrn) {
     if (pScrn->driverPrivate == NULL) {
         xf86DrvMsg(pScrn->scrnIndex, X_WARNING,
-                   "Double freeing NestedPrivate!\n");
+                   "Double freeing EphyrPrivate!\n");
         return;
     }
 
@@ -309,22 +309,22 @@ NestedFreePrivate(ScrnInfoPtr pScrn) {
 
 /* Data from here is valid to all server generations */
 static Bool
-NestedPreInit(ScrnInfoPtr pScrn, int flags) {
-    NestedPrivatePtr pNested;
+EphyrPreInit(ScrnInfoPtr pScrn, int flags) {
+    EphyrPrivatePtr pEphyr;
     char *originString = NULL;
 
-    xf86DrvMsg(pScrn->scrnIndex, X_INFO, "NestedPreInit\n");
+    xf86DrvMsg(pScrn->scrnIndex, X_INFO, "EphyrPreInit\n");
 
     if (flags & PROBE_DETECT) {
         return FALSE;
     }
 
-    if (!NestedAllocatePrivate(pScrn)) {
+    if (!EphyrAllocatePrivate(pScrn)) {
         xf86DrvMsg(pScrn->scrnIndex, X_ERROR, "Failed to allocate private\n");
         return FALSE;
     }
 
-    pNested = PNESTED(pScrn);
+    pEphyr = PEPHYR(pScrn);
 
     if (!xf86SetDepthBpp(pScrn, 0, 0, 0, Support24bppFb | Support32bppFb)) {
         return FALSE;
@@ -347,49 +347,49 @@ NestedPreInit(ScrnInfoPtr pScrn, int flags) {
     pScrn->monitor = pScrn->confScreen->monitor; /* XXX */
 
     xf86CollectOptions(pScrn, NULL);
-    xf86ProcessOptions(pScrn->scrnIndex, pScrn->options, NestedOptions);
+    xf86ProcessOptions(pScrn->scrnIndex, pScrn->options, EphyrOptions);
 
-    if (xf86IsOptionSet(NestedOptions, OPTION_DISPLAY)) {
-        pNested->displayName = xf86GetOptValString(NestedOptions,
+    if (xf86IsOptionSet(EphyrOptions, OPTION_DISPLAY)) {
+        pEphyr->displayName = xf86GetOptValString(EphyrOptions,
                                                    OPTION_DISPLAY);
         xf86DrvMsg(pScrn->scrnIndex, X_INFO, "Using display \"%s\"\n",
-                   pNested->displayName);
+                   pEphyr->displayName);
     } else {
-        pNested->displayName = NULL;
+        pEphyr->displayName = NULL;
     }
 
-    if (xf86IsOptionSet(NestedOptions, OPTION_ORIGIN)) {
-        originString = xf86GetOptValString(NestedOptions, OPTION_ORIGIN);
+    if (xf86IsOptionSet(EphyrOptions, OPTION_ORIGIN)) {
+        originString = xf86GetOptValString(EphyrOptions, OPTION_ORIGIN);
 
-        if (sscanf(originString, "%d %d", &pNested->originX,
-            &pNested->originY) != 2) {
+        if (sscanf(originString, "%d %d", &pEphyr->originX,
+            &pEphyr->originY) != 2) {
             xf86DrvMsg(pScrn->scrnIndex, X_ERROR,
                        "Invalid value for option \"Origin\"\n");
             return FALSE;
         }
 
         xf86DrvMsg(pScrn->scrnIndex, X_INFO, "Using origin x:%d y:%d\n",
-                   pNested->originX, pNested->originY);
+                   pEphyr->originX, pEphyr->originY);
     } else {
-        pNested->originX = 0;
-        pNested->originY = 0;
+        pEphyr->originX = 0;
+        pEphyr->originY = 0;
     }
 
     xf86ShowUnusedOptions(pScrn->scrnIndex, pScrn->options);
 
-    if (!NestedClientCheckDisplay(pNested->displayName)) {
+    if (!EphyrClientCheckDisplay(pEphyr->displayName)) {
         xf86DrvMsg(pScrn->scrnIndex, X_ERROR, "Can't open display: %s\n",
-                   pNested->displayName);
+                   pEphyr->displayName);
         return FALSE;
     }
 
-    if (!NestedClientValidDepth(pScrn->depth)) {
+    if (!EphyrClientValidDepth(pScrn->depth)) {
         xf86DrvMsg(pScrn->scrnIndex, X_ERROR, "Invalid depth: %d\n",
                    pScrn->depth);
         return FALSE;
     }
 
-    if (NestedValidateModes(pScrn) < 1) {
+    if (EphyrValidateModes(pScrn) < 1) {
         xf86DrvMsg(pScrn->scrnIndex, X_ERROR, "No valid modes\n");
         return FALSE;
     }
@@ -417,7 +417,7 @@ NestedPreInit(ScrnInfoPtr pScrn, int flags) {
 }
 
 int
-NestedValidateModes(ScrnInfoPtr pScrn) {
+EphyrValidateModes(ScrnInfoPtr pScrn) {
     DisplayModePtr mode;
     int i, width, height, ret = 0;
     int maxX = 0, maxY = 0;
@@ -447,12 +447,12 @@ NestedValidateModes(ScrnInfoPtr pScrn) {
                 return 0;
             }
 
-            if (!NestedAddMode(pScrn, width, height)) {
+            if (!EphyrAddMode(pScrn, width, height)) {
                 return 0;
             }
         }
     } else {
-        if (!NestedAddMode(pScrn, 640, 480)) {
+        if (!EphyrAddMode(pScrn, 640, 480)) {
             return 0;
         }
     }
@@ -504,7 +504,7 @@ NestedValidateModes(ScrnInfoPtr pScrn) {
 }
 
 Bool
-NestedAddMode(ScrnInfoPtr pScrn, int width, int height) {
+EphyrAddMode(ScrnInfoPtr pScrn, int width, int height) {
     DisplayModePtr mode;
     char nameBuf[64];
     size_t len;
@@ -540,51 +540,51 @@ NestedAddMode(ScrnInfoPtr pScrn, int width, int height) {
     return TRUE;
 }
 
-/* Wrapper for timed call to NestedInputLoadDriver.  Used with timer in order
+/* Wrapper for timed call to EphyrInputLoadDriver. Used with timer in order
  * to force the initialization to wait until the input core is initialized. */
 static CARD32
-NestedMouseTimer(OsTimerPtr timer, CARD32 time, pointer arg) {
-    NestedInputLoadDriver(arg);
+EphyrMouseTimer(OsTimerPtr timer, CARD32 time, pointer arg) {
+    EphyrInputLoadDriver(arg);
     return 0;
 }
 
 static void
-NestedBlockHandler(pointer data, OSTimePtr wt, pointer LastSelectMask) {
-    NestedClientPrivatePtr pNestedClient = data;
-    NestedClientCheckEvents(pNestedClient);
+EphyrBlockHandler(pointer data, OSTimePtr wt, pointer LastSelectMask) {
+    EphyrClientPrivatePtr pEphyrClient = data;
+    EphyrClientCheckEvents(pEphyrClient);
 }
 
 static void
-NestedWakeupHandler(pointer data, int i, pointer LastSelectMask) {
+EphyrWakeupHandler(pointer data, int i, pointer LastSelectMask) {
 }
 
 /* Called at each server generation */
-static Bool NestedScreenInit(SCREEN_INIT_ARGS_DECL) {
+static Bool EphyrScreenInit(SCREEN_INIT_ARGS_DECL) {
     ScrnInfoPtr pScrn = xf86ScreenToScrn(pScreen);
-    NestedPrivatePtr pNested;
+    EphyrPrivatePtr pEphyr;
     Pixel redMask, greenMask, blueMask;
 
-    xf86DrvMsg(pScrn->scrnIndex, X_INFO, "NestedScreenInit\n");
-    pNested = PNESTED(pScrn);
-    NestedPrintPscreen(pScrn);
-    pNested->clientData = NestedClientCreateScreen(pScrn->scrnIndex,
-                                                   pNested->displayName,
-                                                   pScrn->virtualX,
-                                                   pScrn->virtualY,
-                                                   pNested->originX,
-                                                   pNested->originY,
-                                                   pScrn->depth,
-                                                   pScrn->bitsPerPixel,
-                                                   &redMask, &greenMask, &blueMask);
+    xf86DrvMsg(pScrn->scrnIndex, X_INFO, "EphyrScreenInit\n");
+    pEphyr = PEPHYR(pScrn);
+    EphyrPrintPscreen(pScrn);
+    pEphyr->clientData = EphyrClientCreateScreen(pScrn->scrnIndex,
+                                                 pEphyr->displayName,
+                                                 pScrn->virtualX,
+                                                 pScrn->virtualY,
+                                                 pEphyr->originX,
+                                                 pEphyr->originY,
+                                                 pScrn->depth,
+                                                 pScrn->bitsPerPixel,
+                                                 &redMask, &greenMask, &blueMask);
 
-    if (!pNested->clientData) {
+    if (!pEphyr->clientData) {
         xf86DrvMsg(pScrn->scrnIndex, X_ERROR, "Failed to create client screen\n");
         return FALSE;
     }
     
-    /* Schedule the NestedInputLoadDriver function to load once the
+    /* Schedule the EphyrInputLoadDriver function to load once the
      * input core is initialized. */
-    TimerSet(NULL, 0, 1, NestedMouseTimer, pNested->clientData);
+    TimerSet(NULL, 0, 1, EphyrMouseTimer, pEphyr->clientData);
 
     miClearVisualTypes();
 
@@ -599,7 +599,7 @@ static Bool NestedScreenInit(SCREEN_INIT_ARGS_DECL) {
         return FALSE;
     }
 
-    if (!fbScreenInit(pScreen, NestedClientGetFrameBuffer(PCLIENTDATA(pScrn)),
+    if (!fbScreenInit(pScreen, EphyrClientGetFrameBuffer(PCLIENTDATA(pScrn)),
                       pScrn->virtualX, pScrn->virtualY, pScrn->xDpi,
                       pScrn->yDpi, pScrn->displayWidth, pScrn->bitsPerPixel)) {
         return FALSE;
@@ -614,35 +614,35 @@ static Bool NestedScreenInit(SCREEN_INIT_ARGS_DECL) {
         return FALSE;
     }
 
-    pNested->update = NestedShadowUpdate;
-    pScreen->SaveScreen = NestedSaveScreen;
+    pEphyr->update = EphyrShadowUpdate;
+    pScreen->SaveScreen = EphyrSaveScreen;
 
     if (!shadowSetup(pScreen)) {
         return FALSE;
     }
 
-    pNested->CreateScreenResources = pScreen->CreateScreenResources;
-    pScreen->CreateScreenResources = NestedCreateScreenResources;
-    pNested->CloseScreen = pScreen->CloseScreen;
-    pScreen->CloseScreen = NestedCloseScreen;
-    RegisterBlockAndWakeupHandlers(NestedBlockHandler, NestedWakeupHandler, pNested->clientData);
+    pEphyr->CreateScreenResources = pScreen->CreateScreenResources;
+    pScreen->CreateScreenResources = EphyrCreateScreenResources;
+    pEphyr->CloseScreen = pScreen->CloseScreen;
+    pScreen->CloseScreen = EphyrCloseScreen;
+    RegisterBlockAndWakeupHandlers(EphyrBlockHandler, EphyrWakeupHandler, pEphyr->clientData);
     return TRUE;
 }
 
 static Bool
-NestedCreateScreenResources(ScreenPtr pScreen) {
-    xf86DrvMsg(pScreen->myNum, X_INFO, "NestedCreateScreenResources\n");
+EphyrCreateScreenResources(ScreenPtr pScreen) {
+    xf86DrvMsg(pScreen->myNum, X_INFO, "EphyrCreateScreenResources\n");
     ScrnInfoPtr pScrn = xf86ScreenToScrn(pScreen);
-    NestedPrivatePtr pNested = PNESTED(pScrn);
+    EphyrPrivatePtr pEphyr = PEPHYR(pScrn);
     Bool ret;
 
-    pScreen->CreateScreenResources = pNested->CreateScreenResources;
+    pScreen->CreateScreenResources = pEphyr->CreateScreenResources;
     ret = pScreen->CreateScreenResources(pScreen);
-    pScreen->CreateScreenResources = NestedCreateScreenResources;
+    pScreen->CreateScreenResources = EphyrCreateScreenResources;
 
     if(!shadowAdd(pScreen, pScreen->GetScreenPixmap(pScreen),
-                  pNested->update, NULL, 0, 0)) {
-        xf86DrvMsg(pScreen->myNum, X_ERROR, "NestedCreateScreenResources failed to shadowAdd.\n");
+                  pEphyr->update, NULL, 0, 0)) {
+        xf86DrvMsg(pScreen->myNum, X_ERROR, "EphyrCreateScreenResources failed to shadowAdd.\n");
         return FALSE;
     }
 
@@ -650,61 +650,61 @@ NestedCreateScreenResources(ScreenPtr pScreen) {
 }
 
 static void
-NestedShadowUpdate(ScreenPtr pScreen, shadowBufPtr pBuf) {
+EphyrShadowUpdate(ScreenPtr pScreen, shadowBufPtr pBuf) {
     RegionPtr pRegion = DamageRegion(pBuf->pDamage);
-    NestedClientUpdateScreen(PCLIENTDATA(xf86ScreenToScrn(pScreen)),
-                             pRegion->extents.x1, pRegion->extents.y1,
-                             pRegion->extents.x2, pRegion->extents.y2);
+    EphyrClientUpdateScreen(PCLIENTDATA(xf86ScreenToScrn(pScreen)),
+                            pRegion->extents.x1, pRegion->extents.y1,
+                            pRegion->extents.x2, pRegion->extents.y2);
 }
 
 static Bool
-NestedCloseScreen(CLOSE_SCREEN_ARGS_DECL) {
+EphyrCloseScreen(CLOSE_SCREEN_ARGS_DECL) {
     ScrnInfoPtr pScrn = xf86ScreenToScrn(pScreen);
 
-    xf86DrvMsg(pScrn->scrnIndex, X_INFO, "NestedCloseScreen\n");
+    xf86DrvMsg(pScrn->scrnIndex, X_INFO, "EphyrCloseScreen\n");
     shadowRemove(pScreen, pScreen->GetScreenPixmap(pScreen));
-    RemoveBlockAndWakeupHandlers(NestedBlockHandler, NestedWakeupHandler, PNESTED(pScrn)->clientData);
-    NestedClientCloseScreen(PCLIENTDATA(pScrn));
-    pScreen->CloseScreen = PNESTED(pScrn)->CloseScreen;
+    RemoveBlockAndWakeupHandlers(EphyrBlockHandler, EphyrWakeupHandler, PEPHYR(pScrn)->clientData);
+    EphyrClientCloseScreen(PCLIENTDATA(pScrn));
+    pScreen->CloseScreen = PEPHYR(pScrn)->CloseScreen;
     return (*pScreen->CloseScreen)(CLOSE_SCREEN_ARGS);
 }
 
-static Bool NestedSaveScreen(ScreenPtr pScreen, int mode) {
-    xf86DrvMsg(pScreen->myNum, X_INFO, "NestedSaveScreen\n");
+static Bool EphyrSaveScreen(ScreenPtr pScreen, int mode) {
+    xf86DrvMsg(pScreen->myNum, X_INFO, "EphyrSaveScreen\n");
     return TRUE;
 }
 
-static Bool NestedSwitchMode(SWITCH_MODE_ARGS_DECL) {
+static Bool EphyrSwitchMode(SWITCH_MODE_ARGS_DECL) {
     SCRN_INFO_PTR(arg);
-    xf86DrvMsg(pScrn->scrnIndex, X_INFO, "NestedSwitchMode\n");
+    xf86DrvMsg(pScrn->scrnIndex, X_INFO, "EphyrSwitchMode\n");
     return TRUE;
 }
 
-static void NestedAdjustFrame(ADJUST_FRAME_ARGS_DECL) {
+static void EphyrAdjustFrame(ADJUST_FRAME_ARGS_DECL) {
     SCRN_INFO_PTR(arg);
-    xf86DrvMsg(pScrn->scrnIndex, X_INFO, "NestedAdjustFrame\n");
+    xf86DrvMsg(pScrn->scrnIndex, X_INFO, "EphyrAdjustFrame\n");
 }
 
-static Bool NestedEnterVT(VT_FUNC_ARGS_DECL) {
+static Bool EphyrEnterVT(VT_FUNC_ARGS_DECL) {
     SCRN_INFO_PTR(arg);
-    xf86DrvMsg(pScrn->scrnIndex, X_INFO, "NestedEnterVT\n");
+    xf86DrvMsg(pScrn->scrnIndex, X_INFO, "EphyrEnterVT\n");
     return TRUE;
 }
 
-static void NestedLeaveVT(VT_FUNC_ARGS_DECL) {
+static void EphyrLeaveVT(VT_FUNC_ARGS_DECL) {
     SCRN_INFO_PTR(arg);
-    xf86DrvMsg(pScrn->scrnIndex, X_INFO, "NestedLeaveVT\n");
+    xf86DrvMsg(pScrn->scrnIndex, X_INFO, "EphyrLeaveVT\n");
 }
 
-static void NestedFreeScreen(FREE_SCREEN_ARGS_DECL) {
+static void EphyrFreeScreen(FREE_SCREEN_ARGS_DECL) {
     SCRN_INFO_PTR(arg);
-    xf86DrvMsg(pScrn->scrnIndex, X_INFO, "NestedFreeScreen\n");
+    xf86DrvMsg(pScrn->scrnIndex, X_INFO, "EphyrFreeScreen\n");
 }
 
-static ModeStatus NestedValidMode(SCRN_ARG_TYPE arg, DisplayModePtr mode,
+static ModeStatus EphyrValidMode(SCRN_ARG_TYPE arg, DisplayModePtr mode,
                                   Bool verbose, int flags) {
     SCRN_INFO_PTR(arg);
-    xf86DrvMsg(pScrn->scrnIndex, X_INFO, "NestedValidMode:\n");
+    xf86DrvMsg(pScrn->scrnIndex, X_INFO, "EphyrValidMode:\n");
 
     if (!mode) {
         xf86DrvMsg(pScrn->scrnIndex, X_ERROR, "NULL MODE!\n");
@@ -716,7 +716,7 @@ static ModeStatus NestedValidMode(SCRN_ARG_TYPE arg, DisplayModePtr mode,
     return MODE_OK;
 }
 
-void NestedPrintPscreen(ScrnInfoPtr p) {
+void EphyrPrintPscreen(ScrnInfoPtr p) {
     /* XXX: finish implementing this someday? */
     xf86DrvMsg(p->scrnIndex, X_INFO, "Printing pScrn:\n");
     xf86DrvMsg(p->scrnIndex, X_INFO, "driverVersion: %d\n", p->driverVersion);
@@ -735,12 +735,12 @@ void NestedPrintPscreen(ScrnInfoPtr p) {
     xf86DrvMsg(p->scrnIndex, X_INFO, "bitsPerPixel: %d\n", p->bitsPerPixel);
     /*xf86DrvMsg(p->scrnIndex, X_INFO, "pixmap24: 0x%x\n"); */
     xf86DrvMsg(p->scrnIndex, X_INFO, "depth: %d\n", p->depth);
-    NestedPrintMode(p, p->currentMode);
+    EphyrPrintMode(p, p->currentMode);
     /*xf86DrvMsg(p->scrnIndex, X_INFO, "depthFrom: %\n");
     xf86DrvMsg(p->scrnIndex, X_INFO, "\n");*/
 }
 
-void NestedPrintMode(ScrnInfoPtr p, DisplayModePtr m) {
+void EphyrPrintMode(ScrnInfoPtr p, DisplayModePtr m) {
     xf86DrvMsg(p->scrnIndex, X_INFO, "HDisplay   %d\n", m->HDisplay);
     xf86DrvMsg(p->scrnIndex, X_INFO, "HSyncStart %d\n", m->HSyncStart);
     xf86DrvMsg(p->scrnIndex, X_INFO, "HSyncEnd   %d\n", m->HSyncEnd);

@@ -53,29 +53,29 @@
 #endif
 
 #include "client.h"
-#include "nested_input.h"
+#include "ephyr_input.h"
 
 #define SYSCALL(call) while (((call) == -1) && (errno == EINTR))
 
 #define NUM_MOUSE_BUTTONS 6
 #define NUM_MOUSE_AXES 2
 
-static pointer NestedInputPlug(pointer module, pointer options, int *errmaj, int  *errmin);
-static void NestedInputUnplug(pointer p);
-static void NestedInputReadInput(InputInfoPtr pInfo);
-static int NestedInputControl(DeviceIntPtr device, int what);
+static pointer EphyrInputPlug(pointer module, pointer options, int *errmaj, int  *errmin);
+static void EphyrInputUnplug(pointer p);
+static void EphyrInputReadInput(InputInfoPtr pInfo);
+static int EphyrInputControl(DeviceIntPtr device, int what);
 
-static int _nested_input_init_keyboard(DeviceIntPtr device);
-static int _nested_input_init_buttons(DeviceIntPtr device);
-static int _nested_input_init_axes(DeviceIntPtr device);
+static int _ephyr_input_init_keyboard(DeviceIntPtr device);
+static int _ephyr_input_init_buttons(DeviceIntPtr device);
+static int _ephyr_input_init_axes(DeviceIntPtr device);
 
-typedef struct _NestedInputDeviceRec {
-    NestedClientPrivatePtr clientData;
+typedef struct _EphyrInputDeviceRec {
+    EphyrClientPrivatePtr clientData;
     int version;
-} NestedInputDeviceRec, *NestedInputDevicePtr;
+} EphyrInputDeviceRec, *EphyrInputDevicePtr;
 
-static XF86ModuleVersionInfo NestedInputVersionRec = {
-    "nestedinput",
+static XF86ModuleVersionInfo EphyrInputVersionRec = {
+    "ephyrinput",
     MODULEVENDORSTRING,
     MODINFOSTRING1,
     MODINFOSTRING2,
@@ -88,52 +88,52 @@ static XF86ModuleVersionInfo NestedInputVersionRec = {
     {0, 0, 0, 0}
 };
 
-_X_EXPORT XF86ModuleData nestedInputModuleData = {
-    &NestedInputVersionRec,
-    &NestedInputPlug,
-    &NestedInputUnplug
+_X_EXPORT XF86ModuleData ephyrInputModuleData = {
+    &EphyrInputVersionRec,
+    &EphyrInputPlug,
+    &EphyrInputUnplug
 };
 
 int
-NestedInputPreInit(InputDriverPtr drv, InputInfoPtr pInfo, int flags) {
-    NestedInputDevicePtr pNestedInput;
+EphyrInputPreInit(InputDriverPtr drv, InputInfoPtr pInfo, int flags) {
+    EphyrInputDevicePtr pEphyrInput;
 
-    pNestedInput = calloc(1, sizeof(NestedInputDeviceRec));
+    pEphyrInput = calloc(1, sizeof(EphyrInputDeviceRec));
 
-    if (!pNestedInput) {
+    if (!pEphyrInput) {
         return BadAlloc;
     }
 
-    pInfo->private = pNestedInput;
+    pInfo->private = pEphyrInput;
     pInfo->type_name = XI_MOUSE; /* This is really both XI_MOUSE and XI_KEYBOARD... but oh well. */
-    pInfo->read_input = NestedInputReadInput; /* new data available. */
+    pInfo->read_input = EphyrInputReadInput; /* new data available. */
     pInfo->switch_mode = NULL; /* Toggle absolute/relative mode. */
-    pInfo->device_control = NestedInputControl; /* Enable/disable device. */
+    pInfo->device_control = EphyrInputControl; /* Enable/disable device. */
     return Success;
 }
 
 void
-NestedInputUnInit(InputDriverPtr drv, InputInfoPtr pInfo, int flags) {
+EphyrInputUnInit(InputDriverPtr drv, InputInfoPtr pInfo, int flags) {
 }
 
 static pointer
-NestedInputPlug(pointer module, pointer options, int *errmaj, int  *errmin) {
+EphyrInputPlug(pointer module, pointer options, int *errmaj, int  *errmin) {
     return NULL;
 }
 
 static void
-NestedInputUnplug(pointer p) {
+EphyrInputUnplug(pointer p) {
 }
 
 static void
-NestedInputUpdateKeymap(DeviceIntPtr device) {
+EphyrInputUpdateKeymap(DeviceIntPtr device) {
     InputInfoPtr pInfo = device->public.devicePrivate;
-    NestedInputDevicePtr pNestedInput = pInfo->private;
+    EphyrInputDevicePtr pEphyrInput = pInfo->private;
     KeySymsRec keySyms;
     XkbControlsRec ctrls;
     CARD8 modmap[MAP_LENGTH];
 
-    if(!NestedClientGetKeyboardMappings(pNestedInput->clientData, &keySyms, modmap, &ctrls)) {
+    if(!EphyrClientGetKeyboardMappings(pEphyrInput->clientData, &keySyms, modmap, &ctrls)) {
         xf86Msg(X_ERROR, "%s: Failed to get keyboard mappings.\n", pInfo->name);
         return;
     }
@@ -173,7 +173,7 @@ NestedInputUpdateKeymap(DeviceIntPtr device) {
 }
 
 static int
-_nested_input_init_keyboard(DeviceIntPtr device) {
+_ephyr_input_init_keyboard(DeviceIntPtr device) {
     InputInfoPtr pInfo = device->public.devicePrivate;
 
     if (!InitKeyboardDeviceStruct(device, NULL, NULL, NULL)) {
@@ -184,7 +184,7 @@ _nested_input_init_keyboard(DeviceIntPtr device) {
     return Success;
 }
 static int
-_nested_input_init_buttons(DeviceIntPtr device) {
+_ephyr_input_init_buttons(DeviceIntPtr device) {
     InputInfoPtr pInfo = device->public.devicePrivate;
     CARD8 *map;
     Atom buttonLabels[NUM_MOUSE_BUTTONS] = {0};
@@ -206,7 +206,7 @@ _nested_input_init_buttons(DeviceIntPtr device) {
 }
 
 static int
-_nested_input_init_axes(DeviceIntPtr device) {
+_ephyr_input_init_axes(DeviceIntPtr device) {
     int i;
 
     if (!InitValuatorClassDeviceStruct(device,
@@ -226,13 +226,13 @@ _nested_input_init_axes(DeviceIntPtr device) {
 }
 
 static CARD32
-nested_input_on(OsTimerPtr timer, CARD32 time, pointer arg) {
+ephyr_input_on(OsTimerPtr timer, CARD32 time, pointer arg) {
     DeviceIntPtr device = arg;
     InputInfoPtr pInfo = device->public.devicePrivate;
-    NestedInputDevicePtr pNestedInput = pInfo->private;
+    EphyrInputDevicePtr pEphyrInput = pInfo->private;
 
     if(device->public.on) {
-        pInfo->fd = NestedClientGetFileDescriptor(pNestedInput->clientData);
+        pInfo->fd = EphyrClientGetFileDescriptor(pEphyrInput->clientData);
         xf86FlushInput(pInfo->fd);
         xf86AddEnabledDevice(pInfo);
     }
@@ -241,25 +241,25 @@ nested_input_on(OsTimerPtr timer, CARD32 time, pointer arg) {
 }
 
 static int 
-NestedInputControl(DeviceIntPtr device, int what) {
+EphyrInputControl(DeviceIntPtr device, int what) {
     int err;
     InputInfoPtr pInfo = device->public.devicePrivate;
 
     switch (what) {
     case DEVICE_INIT:
-        err = _nested_input_init_keyboard(device);
+        err = _ephyr_input_init_keyboard(device);
 
         if (err != Success) {
             return err;
         }
 
-        err = _nested_input_init_buttons(device);
+        err = _ephyr_input_init_buttons(device);
 
         if (err != Success) {
             return err;
         }
 
-        err = _nested_input_init_axes(device);
+        err = _ephyr_input_init_axes(device);
 
         if (err != Success) {
             return err;
@@ -274,7 +274,7 @@ NestedInputControl(DeviceIntPtr device, int what) {
         }
 
         device->public.on = TRUE;
-        TimerSet(NULL, 0, 1, nested_input_on, device);
+        TimerSet(NULL, 0, 1, ephyr_input_on, device);
         break;
     case DEVICE_OFF:
         xf86Msg(X_INFO, "%s: Off.\n", pInfo->name);
@@ -296,29 +296,29 @@ NestedInputControl(DeviceIntPtr device, int what) {
 }
 
 static CARD32
-nested_input_ready(OsTimerPtr timer, CARD32 time, pointer arg) {
-    NestedClientPrivatePtr clientData = arg;
-    NestedClientCheckEvents(clientData);
+ephyr_input_ready(OsTimerPtr timer, CARD32 time, pointer arg) {
+    EphyrClientPrivatePtr clientData = arg;
+    EphyrClientCheckEvents(clientData);
     return 0;
 }
 
 static void 
-NestedInputReadInput(InputInfoPtr pInfo) {
-    NestedInputDevicePtr pNestedInput = pInfo->private;
-    TimerSet(NULL, 0, 1, nested_input_ready, pNestedInput->clientData);
+EphyrInputReadInput(InputInfoPtr pInfo) {
+    EphyrInputDevicePtr pEphyrInput = pInfo->private;
+    TimerSet(NULL, 0, 1, ephyr_input_ready, pEphyrInput->clientData);
 }
 
 void
-NestedInputLoadDriver(NestedClientPrivatePtr clientData) {
+EphyrInputLoadDriver(EphyrClientPrivatePtr clientData) {
     DeviceIntPtr dev;
     InputInfoPtr pInfo;
-    NestedInputDevicePtr pNestedInput;
+    EphyrInputDevicePtr pEphyrInput;
     int ret;
 
     /* Create input options for our invocation to NewInputDeviceRequest. */
     InputOption* options = NULL;
-    options = input_option_new(options, strdup("identifier"), strdup("nestedinput"));
-    options = input_option_new(options, strdup("driver"), strdup("nestedinput"));
+    options = input_option_new(options, strdup("identifier"), strdup("ephyrinput"));
+    options = input_option_new(options, strdup("driver"), strdup("ephyrinput"));
     
     /* Invoke NewInputDeviceRequest to call the PreInit function of
      * the driver. */
@@ -330,28 +330,28 @@ NestedInputLoadDriver(NestedClientPrivatePtr clientData) {
     }
 
     pInfo = dev->public.devicePrivate;
-    pNestedInput = pInfo->private;
-    pNestedInput->clientData = clientData;
+    pEphyrInput = pInfo->private;
+    pEphyrInput->clientData = clientData;
 
     /* Set our keymap to be the same as the server's */
-    NestedInputUpdateKeymap(dev);
+    EphyrInputUpdateKeymap(dev);
 
     /* Send the device to the client so that the client can send the
      * device back to the input driver when events are being posted. */
-    NestedClientSetDevicePtr(clientData, dev);
+    EphyrClientSetDevicePtr(clientData, dev);
 }
 
 void
-NestedInputPostMouseMotionEvent(DeviceIntPtr dev, int x, int y) {
+EphyrInputPostMouseMotionEvent(DeviceIntPtr dev, int x, int y) {
     xf86PostMotionEvent(dev, TRUE, 0, 2, x, y);
 }
 
 void
-NestedInputPostButtonEvent(DeviceIntPtr dev, int button, int isDown) {
+EphyrInputPostButtonEvent(DeviceIntPtr dev, int button, int isDown) {
     xf86PostButtonEvent(dev, 0, button, isDown, 0, 0);
 }
 
 void
-NestedInputPostKeyboardEvent(DeviceIntPtr dev, unsigned int keycode, int isDown) {
+EphyrInputPostKeyboardEvent(DeviceIntPtr dev, unsigned int keycode, int isDown) {
     xf86PostKeyboardEvent(dev, keycode, isDown);
 }

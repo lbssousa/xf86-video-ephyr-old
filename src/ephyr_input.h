@@ -27,25 +27,20 @@
  * Colin Hill <colin.james.hill@gmail.com>
  * Weseung Hwang <weseung@gmail.com>
  * Nathaniel Way <nathanielcw@hotmail.com>
+ * Laércio de Sousa <laerciosousa@sme-mogidascruzes.sp.gov.br>
  */
 
 #include <xf86.h>
 #include "xf86Xinput.h"
 
-// Loads the nested input driver.
-void
-NestedInputLoadDriver(NestedClientPrivatePtr clientData);
+/* Loads the ephyr input driver. */
+void EphyrInputLoadDriver(EphyrClientPrivatePtr clientData);
 
-// Driver init functions.
-int
-NestedInputPreInit(InputDriverPtr drv, InputInfoPtr pInfo, int flags);
-void
-NestedInputUnInit(InputDriverPtr drv, InputInfoPtr pInfo, int flags);
+/* Driver init functions. */
+int EphyrInputPreInit(InputDriverPtr drv, InputInfoPtr pInfo, int flags);
+void EphyrInputUnInit(InputDriverPtr drv, InputInfoPtr pInfo, int flags);
 
-// Input event posting functions.
-void
-NestedInputPostMouseMotionEvent(DeviceIntPtr dev, int x, int y);
-void
-NestedInputPostButtonEvent(DeviceIntPtr dev, int button, int isDown);
-void 
-NestedInputPostKeyboardEvent(DeviceIntPtr dev, unsigned int keycode, int isDown);
+/* Input event posting functions. */
+void EphyrInputPostMouseMotionEvent(DeviceIntPtr dev, int x, int y);
+void EphyrInputPostButtonEvent(DeviceIntPtr dev, int button, int isDown);
+void EphyrInputPostKeyboardEvent(DeviceIntPtr dev, unsigned int keycode, int isDown);
