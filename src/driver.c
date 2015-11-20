@@ -164,20 +164,7 @@ _X_EXPORT XF86ModuleData ephyrModuleData = {
     NULL, /* teardown */
 };
 
-/* These stuff should be valid to all server generations */
-typedef struct EphyrPrivate {
-    int originX;
-    int originY;
-    EphyrClientPrivatePtr clientData;
-    CreateScreenResourcesProcPtr CreateScreenResources;
-    CloseScreenProcPtr CloseScreen;
-    ShadowUpdateProc update;
-} EphyrPrivate, *EphyrPrivatePtr;
-
 Bool enable_ephyr_input;
-
-#define PEPHYR(p) ((EphyrPrivatePtr)((p)->driverPrivate))
-#define PCLIENTDATA(p) (PEPHYR(p)->clientData)
 
 static pointer
 EphyrSetup(pointer module, pointer opts, int *errmaj, int *errmin) {
@@ -322,7 +309,7 @@ EphyrFreePrivate(ScrnInfoPtr pScrn) {
 /* Data from here is valid to all server generations */
 static Bool
 EphyrPreInit(ScrnInfoPtr pScrn, int flags) {
-    EphyrPrivatePtr pEphyr;
+    EphyrScrPrivPtr scrpriv = pScrn->driverPrivate;
     const char *displayName = getenv("DISPLAY");
     char *originString = NULL;
 
@@ -336,11 +323,6 @@ EphyrPreInit(ScrnInfoPtr pScrn, int flags) {
         xf86DrvMsg(pScrn->scrnIndex, X_ERROR, "Failed to allocate private\n");
         return FALSE;
     }
-
-    pEphyr = PEPHYR(pScrn);
-    pEphyr->displayName = NULL;
-    pEphyr->originX = 0;
-    pEphyr->originY = 0;
 
     if (!xf86SetDepthBpp(pScrn, 0, 0, 0, Support24bppFb | Support32bppFb)) {
         return FALSE;
@@ -382,25 +364,26 @@ EphyrPreInit(ScrnInfoPtr pScrn, int flags) {
     if (xf86IsOptionSet(EphyrOptions, OPTION_ORIGIN)) {
         originString = xf86GetOptValString(EphyrOptions, OPTION_ORIGIN);
 
-        if (sscanf(originString, "%d %d", &pEphyr->originX,
-                   &pEphyr->originY) != 2) {
+        if (sscanf(originString, "%d %d", &scrpriv->win_x,
+                   &scrpriv->originY) != 2) {
             xf86DrvMsg(pScrn->scrnIndex, X_ERROR,
                        "Invalid value for option \"Origin\"\n");
             return FALSE;
         }
 
         xf86DrvMsg(pScrn->scrnIndex, X_INFO, "Using origin x:%d y:%d\n",
-                   pEphyr->originX, pEphyr->originY);
+                   scrpriv->win_x, scrpriv->win_y);
     }
 
     xf86ShowUnusedOptions(pScrn->scrnIndex, pScrn->options);
 
     if (!hostx_init()) {
         xf86DrvMsg(pScrn->scrnIndex, X_ERROR, "Can't open display: %s\n",
-                   pEphyr->displayName);
+                   scrpriv->displayName);
         return FALSE;
     }
 
+    /* XXX: replace with Xephyr corresponding function */
     if (!EphyrClientValidDepth(pScrn->depth)) {
         xf86DrvMsg(pScrn->scrnIndex, X_ERROR, "Invalid depth: %d\n",
                    pScrn->depth);
@@ -573,8 +556,9 @@ EphyrMouseTimer(OsTimerPtr timer, CARD32 time, pointer arg) {
 
 static void
 EphyrBlockHandler(pointer data, OSTimePtr wt, pointer LastSelectMask) {
-    EphyrClientPrivatePtr pEphyrClient = data;
-    EphyrClientCheckEvents(pEphyrClient);
+    EphyrScrPrivPtr scrpriv = data;
+    /* XXX: replace with Xephyr corresponding function */
+    EphyrClientCheckEvents(scrpriv);
 }
 
 static void
@@ -584,30 +568,33 @@ EphyrWakeupHandler(pointer data, int i, pointer LastSelectMask) {
 /* Called at each server generation */
 static Bool EphyrScreenInit(SCREEN_INIT_ARGS_DECL) {
     ScrnInfoPtr pScrn = xf86ScreenToScrn(pScreen);
-    EphyrPrivatePtr pEphyr;
+    EphyrScrPrivPtr scrpriv;
     Pixel redMask, greenMask, blueMask;
 
     xf86DrvMsg(pScrn->scrnIndex, X_INFO, "EphyrScreenInit\n");
-    pEphyr = PEPHYR(pScrn);
+    scrpriv = pScrn->driverPrivate;
     EphyrPrintPscreen(pScrn);
-    pEphyr->clientData = EphyrClientCreateScreen(pScrn->scrnIndex,
+    /* XXX: replace with Xephyr corresponding function
+    scrpriv->clientData = EphyrClientCreateScreen(pScrn->scrnIndex,
                                                  pScrn->virtualX,
                                                  pScrn->virtualY,
-                                                 pEphyr->originX,
-                                                 pEphyr->originY,
+                                                 scrpriv->originX,
+                                                 scrpriv->originY,
                                                  pScrn->depth,
                                                  pScrn->bitsPerPixel,
                                                  &redMask, &greenMask, &blueMask);
 
-    if (!pEphyr->clientData) {
+
+    if (!scrpriv->clientData) {
         xf86DrvMsg(pScrn->scrnIndex, X_ERROR, "Failed to create client screen\n");
         return FALSE;
     }
+    */
     
     /* Schedule the EphyrInputLoadDriver function to load once the
      * input core is initialized. */
     if (enable_ephyr_input) {
-       TimerSet(NULL, 0, 1, EphyrMouseTimer, pEphyr->clientData);
+       TimerSet(NULL, 0, 1, EphyrMouseTimer, scrpriv);
     }
 
     miClearVisualTypes();
@@ -623,7 +610,8 @@ static Bool EphyrScreenInit(SCREEN_INIT_ARGS_DECL) {
         return FALSE;
     }
 
-    if (!fbScreenInit(pScreen, EphyrClientGetFrameBuffer(PCLIENTDATA(pScrn)),
+    /* XXX: replace with Xephyr corresponding function */
+    if (!fbScreenInit(pScreen, EphyrClientGetFrameBuffer(scrpriv),
                       pScrn->virtualX, pScrn->virtualY, pScrn->xDpi,
                       pScrn->yDpi, pScrn->displayWidth, pScrn->bitsPerPixel)) {
         return FALSE;
@@ -638,18 +626,18 @@ static Bool EphyrScreenInit(SCREEN_INIT_ARGS_DECL) {
         return FALSE;
     }
 
-    pEphyr->update = EphyrShadowUpdate;
+    scrpriv->update = EphyrShadowUpdate;
     pScreen->SaveScreen = EphyrSaveScreen;
 
     if (!shadowSetup(pScreen)) {
         return FALSE;
     }
 
-    pEphyr->CreateScreenResources = pScreen->CreateScreenResources;
+    scrpriv->CreateScreenResources = pScreen->CreateScreenResources;
     pScreen->CreateScreenResources = EphyrCreateScreenResources;
-    pEphyr->CloseScreen = pScreen->CloseScreen;
+    scrpriv->CloseScreen = pScreen->CloseScreen;
     pScreen->CloseScreen = EphyrCloseScreen;
-    RegisterBlockAndWakeupHandlers(EphyrBlockHandler, EphyrWakeupHandler, pEphyr->clientData);
+    RegisterBlockAndWakeupHandlers(EphyrBlockHandler, EphyrWakeupHandler, scrpriv);
     return TRUE;
 }
 
@@ -657,15 +645,15 @@ static Bool
 EphyrCreateScreenResources(ScreenPtr pScreen) {
     xf86DrvMsg(pScreen->myNum, X_INFO, "EphyrCreateScreenResources\n");
     ScrnInfoPtr pScrn = xf86ScreenToScrn(pScreen);
-    EphyrPrivatePtr pEphyr = PEPHYR(pScrn);
+    EphyrScrPrivPtr scrpriv = pScrn->driverPrivate;
     Bool ret;
 
-    pScreen->CreateScreenResources = pEphyr->CreateScreenResources;
+    pScreen->CreateScreenResources = scrpriv->CreateScreenResources;
     ret = pScreen->CreateScreenResources(pScreen);
     pScreen->CreateScreenResources = EphyrCreateScreenResources;
 
     if(!shadowAdd(pScreen, pScreen->GetScreenPixmap(pScreen),
-                  pEphyr->update, NULL, 0, 0)) {
+                  scrpriv->update, NULL, 0, 0)) {
         xf86DrvMsg(pScreen->myNum, X_ERROR, "EphyrCreateScreenResources failed to shadowAdd.\n");
         return FALSE;
     }
@@ -675,8 +663,12 @@ EphyrCreateScreenResources(ScreenPtr pScreen) {
 
 static void
 EphyrShadowUpdate(ScreenPtr pScreen, shadowBufPtr pBuf) {
+    ScrnInfoPtr pScrn = xf86ScreenToScrn(pScreen);
+    EphyrScrPrivPtr scrpriv = pScrn->driverPrivate;
+
     RegionPtr pRegion = DamageRegion(pBuf->pDamage);
-    EphyrClientUpdateScreen(PCLIENTDATA(xf86ScreenToScrn(pScreen)),
+    /* XXX: replace with Xephyr corresponding function */
+    EphyrClientUpdateScreen(scrpriv,
                             pRegion->extents.x1, pRegion->extents.y1,
                             pRegion->extents.x2, pRegion->extents.y2);
 }
@@ -684,12 +676,14 @@ EphyrShadowUpdate(ScreenPtr pScreen, shadowBufPtr pBuf) {
 static Bool
 EphyrCloseScreen(CLOSE_SCREEN_ARGS_DECL) {
     ScrnInfoPtr pScrn = xf86ScreenToScrn(pScreen);
+    EphyrScrPrivPtr scrpriv = pScrn->driverPrivate;
 
     xf86DrvMsg(pScrn->scrnIndex, X_INFO, "EphyrCloseScreen\n");
     shadowRemove(pScreen, pScreen->GetScreenPixmap(pScreen));
-    RemoveBlockAndWakeupHandlers(EphyrBlockHandler, EphyrWakeupHandler, PEPHYR(pScrn)->clientData);
-    EphyrClientCloseScreen(PCLIENTDATA(pScrn));
-    pScreen->CloseScreen = PEPHYR(pScrn)->CloseScreen;
+    RemoveBlockAndWakeupHandlers(EphyrBlockHandler, EphyrWakeupHandler, scrpriv);
+    /* XXX: replace with Xephyr corresponding function */
+    EphyrClientCloseScreen(scrpriv);
+    pScreen->CloseScreen = scrpriv->CloseScreen;
     return (*pScreen->CloseScreen)(CLOSE_SCREEN_ARGS);
 }
 
