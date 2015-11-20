@@ -194,7 +194,11 @@ EphyrSetup(pointer module, pointer opts, int *errmaj, int *errmin) {
             xf86AddInputDriver(&EPHYRINPUT, module, 0);
         }
 
-        return (pointer)1;
+        if (hostx_init()) {
+            return (pointer)1;
+        } else {
+            return NULL;
+        }
     } else {
         if (errmaj) {
             *errmaj = LDR_ONCEONLY;

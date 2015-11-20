@@ -471,6 +471,8 @@ hostx_init(void) {
                         strlen("_NET_WM_STATE_FULLSCREEN"),
                         "_NET_WM_STATE_FULLSCREEN");
 
+    /* XXX: Move this code to another function, if needed. */
+#if 0
     for (index = 0; index < HostX.n_screens; index++) {
         ScrnInfoPtr screen = HostX.screens[index];
         EphyrScrPriv *scrpriv = screen->driverPrivate;
@@ -569,6 +571,7 @@ hostx_init(void) {
             }
         }
     }
+#endif
 
     if (!xcb_aux_parse_color("red", &red, &green, &blue)) {
         xcb_lookup_color_cookie_t c =
@@ -615,6 +618,8 @@ hostx_init(void) {
     if (!hostx_want_host_cursor()) {
         CursorVisible = TRUE;
 
+        /* XXX: move this code to another function, if needed. */
+#if 0
         /* Ditch the cursor, we provide our 'own' */
         for (index = 0; index < HostX.n_screens; index++) {
             ScrnInfoPtr screen = HostX.screens[index];
@@ -625,6 +630,7 @@ hostx_init(void) {
                                          XCB_CW_CURSOR,
                                          &HostX.empty_cursor);
         }
+#endif
     }
 
     /* Try to get share memory ximages for a little bit more speed */
