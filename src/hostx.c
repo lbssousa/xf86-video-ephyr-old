@@ -434,6 +434,7 @@ hostx_init(void) {
     }
 
     if (!HostX.conn || xcb_connection_has_error(HostX.conn)) {
+        HostX.conn = NULL;
         return FALSE;
     }
 

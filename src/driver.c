@@ -181,11 +181,7 @@ EphyrSetup(pointer module, pointer opts, int *errmaj, int *errmin) {
             xf86AddInputDriver(&EPHYRINPUT, module, 0);
         }
 
-        if (hostx_init()) {
-            return (pointer)1;
-        } else {
-            return NULL;
-        }
+        return (pointer)1;
     } else {
         if (errmaj) {
             *errmaj = LDR_ONCEONLY;
@@ -377,9 +373,12 @@ EphyrPreInit(ScrnInfoPtr pScrn, int flags) {
 
     xf86ShowUnusedOptions(pScrn->scrnIndex, pScrn->options);
 
-    if (!hostx_init()) {
+    if (hostx_get_xcbconn() != NULL) {
+        xf86DrvMsg(pScrn->scrnIndex, X_INFO, "Reusing current XCB connection to display %s\n",
+                   displayName);
+    } else if (!hostx_init()) {
         xf86DrvMsg(pScrn->scrnIndex, X_ERROR, "Can't open display: %s\n",
-                   scrpriv->displayName);
+                   displayName);
         return FALSE;
     }
 
