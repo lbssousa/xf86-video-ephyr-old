@@ -548,9 +548,7 @@ EphyrMouseTimer(OsTimerPtr timer, CARD32 time, pointer arg) {
 
 static void
 EphyrBlockHandler(pointer data, OSTimePtr wt, pointer LastSelectMask) {
-    EphyrScrPrivPtr scrpriv = data;
-    /* XXX: replace with Xephyr corresponding function */
-    EphyrClientCheckEvents(scrpriv);
+    ephyrPoll();
 }
 
 static void
