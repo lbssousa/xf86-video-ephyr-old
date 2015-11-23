@@ -382,13 +382,6 @@ EphyrPreInit(ScrnInfoPtr pScrn, int flags) {
         return FALSE;
     }
 
-    /* XXX: replace with Xephyr corresponding function */
-    if (!EphyrClientValidDepth(pScrn->depth)) {
-        xf86DrvMsg(pScrn->scrnIndex, X_ERROR, "Invalid depth: %d\n",
-                   pScrn->depth);
-        return FALSE;
-    }
-
     if (EphyrValidateModes(pScrn) < 1) {
         xf86DrvMsg(pScrn->scrnIndex, X_ERROR, "No valid modes\n");
         return FALSE;
