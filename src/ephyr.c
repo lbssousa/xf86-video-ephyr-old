@@ -98,39 +98,39 @@ ephyrCardInit(KdCardInfo * card)
 }
 
 Bool
-ephyrScreenInitialize(KdScreenInfo *screen)
-{
-    EphyrScrPriv *scrpriv = screen->driver;
+ephyrScreenInitialize(ScrnInfoPtr screen) {
+    EphyrScrPrivPtr scrpriv = screen->driverPrivate;
     int x = 0, y = 0;
     int width = 640, height = 480;
     CARD32 redMask, greenMask, blueMask;
 
     if (hostx_want_screen_geometry(screen, &width, &height, &x, &y)
         || !screen->width || !screen->height) {
-        screen->width = width;
-        screen->height = height;
-        screen->x = x;
-        screen->y = y;
+        screen->VirtualX = width;
+        screen->VirtualY = height;
+        screen->frameX0 = x;
+        screen->frameY0 = y;
     }
 
     if (EphyrWantGrayScale)
-        screen->fb.depth = 8;
+        screen->depth = 8;
 
-    if (screen->fb.depth && screen->fb.depth != hostx_get_depth()) {
-        if (screen->fb.depth < hostx_get_depth()
-            && (screen->fb.depth == 24 || screen->fb.depth == 16
-                || screen->fb.depth == 8)) {
-            scrpriv->server_depth = screen->fb.depth;
+    if (screen->depth && screen->depth != hostx_get_depth()) {
+        if (screen->depth < hostx_get_depth()
+            && (screen->depth == 24 || screen->depth == 16
+                || screen->depth == 8)) {
+            scrpriv->server_depth = screen->depth;
         }
         else
             ErrorF
                 ("\nXephyr: requested screen depth not supported, setting to match hosts.\n");
     }
 
-    screen->fb.depth = hostx_get_server_depth(screen);
-    screen->rate = 72;
+    screen->depth = hostx_get_server_depth(screen);
+    /* XXX: find a xfree86 equivalent (maybe a xorgRR* struct)
+    screen->rate = 72; */
 
-    if (screen->fb.depth <= 8) {
+    if (screen->depth <= 8) {
         if (EphyrWantGrayScale)
             screen->fb.visuals = ((1 << StaticGray) | (1 << GrayScale));
         else
@@ -143,27 +143,27 @@ ephyrScreenInitialize(KdScreenInfo *screen)
         screen->fb.redMask = 0x00;
         screen->fb.greenMask = 0x00;
         screen->fb.blueMask = 0x00;
-        screen->fb.depth = 8;
-        screen->fb.bitsPerPixel = 8;
+        screen->depth = 8;
+        screen->bitsPerPixel = 8;
     }
     else {
         screen->fb.visuals = (1 << TrueColor);
 
-        if (screen->fb.depth <= 15) {
-            screen->fb.depth = 15;
-            screen->fb.bitsPerPixel = 16;
+        if (screen->depth <= 15) {
+            screen->depth = 15;
+            screen->bitsPerPixel = 16;
         }
-        else if (screen->fb.depth <= 16) {
-            screen->fb.depth = 16;
-            screen->fb.bitsPerPixel = 16;
+        else if (screen->depth <= 16) {
+            screen->depth = 16;
+            screen->bitsPerPixel = 16;
         }
-        else if (screen->fb.depth <= 24) {
-            screen->fb.depth = 24;
-            screen->fb.bitsPerPixel = 32;
+        else if (screen->depth <= 24) {
+            screen->depth = 24;
+            screen->bitsPerPixel = 32;
         }
         else if (screen->fb.depth <= 30) {
-            screen->fb.depth = 30;
-            screen->fb.bitsPerPixel = 32;
+            screen->depth = 30;
+            screen->bitsPerPixel = 32;
         }
         else {
             ErrorF("\nXephyr: Unsupported screen depth %d\n", screen->fb.depth);
@@ -215,15 +215,14 @@ ephyrBufferHeight(KdScreenInfo * screen)
 }
 
 Bool
-ephyrMapFramebuffer(KdScreenInfo * screen)
-{
-    EphyrScrPriv *scrpriv = screen->driver;
+ephyrMapFramebuffer(ScrnInfoPtr screen) {
+    EphyrScrPrivPtr scrpriv = screen->driverPrivate;
     EphyrPriv *priv = screen->card->driver;
     KdPointerMatrix m;
     int buffer_height;
 
     EPHYR_LOG("screen->width: %d, screen->height: %d index=%d",
-              screen->width, screen->height, screen->mynum);
+              screen->VirtualX, screen->VirtualY, screen->scrnIndex);
 
     /*
      * Use the rotation last applied to ourselves (in the Xephyr case the fb
@@ -235,9 +234,9 @@ ephyrMapFramebuffer(KdScreenInfo * screen)
     buffer_height = ephyrBufferHeight(screen);
 
     priv->base =
-        hostx_screen_init(screen, screen->x, screen->y,
-                          screen->width, screen->height, buffer_height,
-                          &priv->bytes_per_line, &screen->fb.bitsPerPixel);
+        hostx_screen_init(screen, screen->frameX0, screen->frameY0,
+                          screen->VirtualX, screen->VirtualY, buffer_height,
+                          &priv->bytes_per_line, &screen->bitsPerPixel);
 
     if ((scrpriv->randr & RR_Rotate_0) && !(scrpriv->randr & RR_Reflect_All)) {
         scrpriv->shadow = FALSE;

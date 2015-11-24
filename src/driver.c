@@ -305,7 +305,6 @@ EphyrFreePrivate(ScrnInfoPtr pScrn) {
 /* Data from here is valid to all server generations */
 static Bool
 EphyrPreInit(ScrnInfoPtr pScrn, int flags) {
-    EphyrScrPrivPtr scrpriv = pScrn->driverPrivate;
     const char *displayName = getenv("DISPLAY");
     char *originString = NULL;
 
@@ -360,15 +359,15 @@ EphyrPreInit(ScrnInfoPtr pScrn, int flags) {
     if (xf86IsOptionSet(EphyrOptions, OPTION_ORIGIN)) {
         originString = xf86GetOptValString(EphyrOptions, OPTION_ORIGIN);
 
-        if (sscanf(originString, "%d %d", &scrpriv->win_x,
-                   &scrpriv->originY) != 2) {
+        if (sscanf(originString, "%d %d", &pScrn->frameX0,
+                   &pScrn->frameY0) != 2) {
             xf86DrvMsg(pScrn->scrnIndex, X_ERROR,
                        "Invalid value for option \"Origin\"\n");
             return FALSE;
         }
 
         xf86DrvMsg(pScrn->scrnIndex, X_INFO, "Using origin x:%d y:%d\n",
-                   scrpriv->win_x, scrpriv->win_y);
+                   pScrn->frameX0, pScrn->frameY0);
     }
 
     xf86ShowUnusedOptions(pScrn->scrnIndex, pScrn->options);
@@ -564,6 +563,10 @@ static Bool EphyrScreenInit(SCREEN_INIT_ARGS_DECL) {
     xf86DrvMsg(pScrn->scrnIndex, X_INFO, "EphyrScreenInit\n");
     scrpriv = pScrn->driverPrivate;
     EphyrPrintPscreen(pScrn);
+    
+    if (!hostx_init_window(scrpriv)) {
+        return FALSE;
+    }
     /* XXX: replace with Xephyr corresponding function
     scrpriv->clientData = EphyrClientCreateScreen(pScrn->scrnIndex,
                                                  pScrn->virtualX,
