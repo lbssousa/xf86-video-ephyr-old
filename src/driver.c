@@ -97,8 +97,7 @@ void EPHYRPrintMode(ScrnInfoPtr p, DisplayModePtr m);
 
 typedef enum {
     OPTION_DISPLAY,
-    OPTION_XAUTHORITY,
-    OPTION_ORIGIN
+    OPTION_XAUTHORITY
 } EphyrOpts;
 
 typedef enum {
@@ -116,7 +115,6 @@ static SymTabRec EPHYRChipsets[] = {
 static OptionInfoRec EPHYROptions[] = {
     { OPTION_DISPLAY,    "Display",    OPTV_STRING, {0}, FALSE },
     { OPTION_XAUTHORITY, "Xauthority", OPTV_STRING, {0}, FALSE },
-    { OPTION_ORIGIN,     "Origin",     OPTV_STRING, {0}, FALSE },
     { -1,                NULL,         OPTV_NONE,   {0}, FALSE }
 };
 
@@ -306,7 +304,6 @@ EPHYRFreePrivate(ScrnInfoPtr pScrn) {
 static Bool
 EPHYRPreInit(ScrnInfoPtr pScrn, int flags) {
     const char *displayName = getenv("DISPLAY");
-    char *originString = NULL;
 
     xf86DrvMsg(pScrn->scrnIndex, X_INFO, "EPHYRPreInit\n");
 
@@ -354,20 +351,6 @@ EPHYRPreInit(ScrnInfoPtr pScrn, int flags) {
         setenv("XAUTHORITY",
                xf86GetOptValString(EPHYROptions,
                                    OPTION_XAUTHORITY), 1);
-    }
-
-    if (xf86IsOptionSet(EPHYROptions, OPTION_ORIGIN)) {
-        originString = xf86GetOptValString(EPHYROptions, OPTION_ORIGIN);
-
-        if (sscanf(originString, "%d %d", &pScrn->frameX0,
-                   &pScrn->frameY0) != 2) {
-            xf86DrvMsg(pScrn->scrnIndex, X_ERROR,
-                       "Invalid value for option \"Origin\"\n");
-            return FALSE;
-        }
-
-        xf86DrvMsg(pScrn->scrnIndex, X_INFO, "Using origin x:%d y:%d\n",
-                   pScrn->frameX0, pScrn->frameY0);
     }
 
     xf86ShowUnusedOptions(pScrn->scrnIndex, pScrn->options);
