@@ -60,10 +60,10 @@
 #define NUM_MOUSE_BUTTONS 6
 #define NUM_MOUSE_AXES 2
 
-static pointer EphyrInputPlug(pointer module, pointer options, int *errmaj, int  *errmin);
-static void EphyrInputUnplug(pointer p);
-static void EphyrInputReadInput(InputInfoPtr pInfo);
-static int EphyrInputControl(DeviceIntPtr device, int what);
+static pointer EPHYRInputPlug(pointer module, pointer options, int *errmaj, int  *errmin);
+static void EPHYRInputUnplug(pointer p);
+static void EPHYRInputReadInput(InputInfoPtr pInfo);
+static int EPHYRInputControl(DeviceIntPtr device, int what);
 
 static int _ephyr_input_init_keyboard(DeviceIntPtr device);
 static int _ephyr_input_init_buttons(DeviceIntPtr device);
@@ -74,7 +74,7 @@ typedef struct _EphyrInputDeviceRec {
     int version;
 } EphyrInputDeviceRec, *EphyrInputDevicePtr;
 
-static XF86ModuleVersionInfo EphyrInputVersionRec = {
+static XF86ModuleVersionInfo EPHYRInputVersionRec = {
     "ephyrinput",
     MODULEVENDORSTRING,
     MODINFOSTRING1,
@@ -89,13 +89,13 @@ static XF86ModuleVersionInfo EphyrInputVersionRec = {
 };
 
 _X_EXPORT XF86ModuleData ephyrInputModuleData = {
-    &EphyrInputVersionRec,
-    &EphyrInputPlug,
-    &EphyrInputUnplug
+    &EPHYRInputVersionRec,
+    &EPHYRInputPlug,
+    &EPHYRInputUnplug
 };
 
 int
-EphyrInputPreInit(InputDriverPtr drv, InputInfoPtr pInfo, int flags) {
+EPHYRInputPreInit(InputDriverPtr drv, InputInfoPtr pInfo, int flags) {
     EphyrInputDevicePtr pEphyrInput;
 
     pEphyrInput = calloc(1, sizeof(EphyrInputDeviceRec));
@@ -106,27 +106,27 @@ EphyrInputPreInit(InputDriverPtr drv, InputInfoPtr pInfo, int flags) {
 
     pInfo->private = pEphyrInput;
     pInfo->type_name = XI_MOUSE; /* This is really both XI_MOUSE and XI_KEYBOARD... but oh well. */
-    pInfo->read_input = EphyrInputReadInput; /* new data available. */
+    pInfo->read_input = EPHYRInputReadInput; /* new data available. */
     pInfo->switch_mode = NULL; /* Toggle absolute/relative mode. */
-    pInfo->device_control = EphyrInputControl; /* Enable/disable device. */
+    pInfo->device_control = EPHYRInputControl; /* Enable/disable device. */
     return Success;
 }
 
 void
-EphyrInputUnInit(InputDriverPtr drv, InputInfoPtr pInfo, int flags) {
+EPHYRInputUnInit(InputDriverPtr drv, InputInfoPtr pInfo, int flags) {
 }
 
 static pointer
-EphyrInputPlug(pointer module, pointer options, int *errmaj, int  *errmin) {
+EPHYRInputPlug(pointer module, pointer options, int *errmaj, int  *errmin) {
     return NULL;
 }
 
 static void
-EphyrInputUnplug(pointer p) {
+EPHYRInputUnplug(pointer p) {
 }
 
 static void
-EphyrInputUpdateKeymap(DeviceIntPtr device) {
+EPHYRInputUpdateKeymap(DeviceIntPtr device) {
     InputInfoPtr pInfo = device->public.devicePrivate;
     EphyrInputDevicePtr pEphyrInput = pInfo->private;
     KeySymsRec keySyms;
@@ -248,7 +248,7 @@ ephyr_input_on(OsTimerPtr timer, CARD32 time, pointer arg) {
 }
 
 static int 
-EphyrInputControl(DeviceIntPtr device, int what) {
+EPHYRInputControl(DeviceIntPtr device, int what) {
     int err;
     InputInfoPtr pInfo = device->public.devicePrivate;
 
@@ -316,13 +316,13 @@ ephyr_input_ready(OsTimerPtr timer, CARD32 time, pointer arg) {
 }
 
 static void 
-EphyrInputReadInput(InputInfoPtr pInfo) {
+EPHYRInputReadInput(InputInfoPtr pInfo) {
     EphyrInputDevicePtr pEphyrInput = pInfo->private;
     TimerSet(NULL, 0, 1, ephyr_input_ready, pEphyrInput->clientData);
 }
 
 void
-EphyrInputLoadDriver(EphyrClientPrivatePtr clientData) {
+EPHYRInputLoadDriver(EphyrClientPrivatePtr clientData) {
     DeviceIntPtr dev;
     InputInfoPtr pInfo;
     EphyrInputDevicePtr pEphyrInput;
@@ -348,7 +348,7 @@ EphyrInputLoadDriver(EphyrClientPrivatePtr clientData) {
     pEphyrInput->clientData = clientData;
 
     /* Set our keymap to be the same as the server's */
-    EphyrInputUpdateKeymap(dev);
+    EPHYRInputUpdateKeymap(dev);
 
     /* Send the device to the client so that the client can send the
      * device back to the input driver when events are being posted. */
@@ -364,16 +364,16 @@ EphyrInputLoadDriver(EphyrClientPrivatePtr clientData) {
 }
 
 void
-EphyrInputPostMouseMotionEvent(DeviceIntPtr dev, int x, int y) {
+EPHYRInputPostMouseMotionEvent(DeviceIntPtr dev, int x, int y) {
     xf86PostMotionEvent(dev, TRUE, 0, 2, x, y);
 }
 
 void
-EphyrInputPostButtonEvent(DeviceIntPtr dev, int button, int isDown) {
+EPHYRInputPostButtonEvent(DeviceIntPtr dev, int button, int isDown) {
     xf86PostButtonEvent(dev, 0, button, isDown, 0, 0);
 }
 
 void
-EphyrInputPostKeyboardEvent(DeviceIntPtr dev, unsigned int keycode, int isDown) {
+EPHYRInputPostKeyboardEvent(DeviceIntPtr dev, unsigned int keycode, int isDown) {
     xf86PostKeyboardEvent(dev, keycode, isDown);
 }

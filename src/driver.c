@@ -63,37 +63,37 @@
 
 #define TIMER_CALLBACK_INTERVAL 20
 
-static MODULESETUPPROTO(EphyrSetup);
-static void EphyrIdentify(int flags);
-static const OptionInfoRec *EphyrAvailableOptions(int chipid, int busid);
-static Bool EphyrProbe(DriverPtr drv, int flags);
-static Bool EphyrDriverFunc(ScrnInfoPtr pScrn, xorgDriverFuncOp op,
+static MODULESETUPPROTO(EPHYRSetup);
+static void EPHYRIdentify(int flags);
+static const OptionInfoRec *EPHYRAvailableOptions(int chipid, int busid);
+static Bool EPHYRProbe(DriverPtr drv, int flags);
+static Bool EPHYRDriverFunc(ScrnInfoPtr pScrn, xorgDriverFuncOp op,
                             pointer ptr);
 
-static Bool EphyrPreInit(ScrnInfoPtr pScrn, int flags);
-static Bool EphyrScreenInit(SCREEN_INIT_ARGS_DECL);
+static Bool EPHYRPreInit(ScrnInfoPtr pScrn, int flags);
+static Bool EPHYRScreenInit(SCREEN_INIT_ARGS_DECL);
 
-static Bool EphyrSwitchMode(SWITCH_MODE_ARGS_DECL);
-static void EphyrAdjustFrame(ADJUST_FRAME_ARGS_DECL);
-static Bool EphyrEnterVT(VT_FUNC_ARGS_DECL);
-static void EphyrLeaveVT(VT_FUNC_ARGS_DECL);
-static void EphyrFreeScreen(FREE_SCREEN_ARGS_DECL);
-static ModeStatus EphyrValidMode(SCRN_ARG_TYPE arg, DisplayModePtr mode,
+static Bool EPHYRSwitchMode(SWITCH_MODE_ARGS_DECL);
+static void EPHYRAdjustFrame(ADJUST_FRAME_ARGS_DECL);
+static Bool EPHYREnterVT(VT_FUNC_ARGS_DECL);
+static void EPHYRLeaveVT(VT_FUNC_ARGS_DECL);
+static void EPHYRFreeScreen(FREE_SCREEN_ARGS_DECL);
+static ModeStatus EPHYRValidMode(SCRN_ARG_TYPE arg, DisplayModePtr mode,
                                  Bool verbose, int flags);
 
-static Bool EphyrSaveScreen(ScreenPtr pScreen, int mode);
-static Bool EphyrCreateScreenResources(ScreenPtr pScreen);
+static Bool EPHYRSaveScreen(ScreenPtr pScreen, int mode);
+static Bool EPHYRCreateScreenResources(ScreenPtr pScreen);
 
-static void EphyrShadowUpdate(ScreenPtr pScreen, shadowBufPtr pBuf);
-static Bool EphyrCloseScreen(CLOSE_SCREEN_ARGS_DECL);
+static void EPHYRShadowUpdate(ScreenPtr pScreen, shadowBufPtr pBuf);
+static Bool EPHYRCloseScreen(CLOSE_SCREEN_ARGS_DECL);
 
-static void EphyrBlockHandler(pointer data, OSTimePtr wt, pointer LastSelectMask);
-static void EphyrWakeupHandler(pointer data, int i, pointer LastSelectMask);
+static void EPHYRBlockHandler(pointer data, OSTimePtr wt, pointer LastSelectMask);
+static void EPHYRWakeupHandler(pointer data, int i, pointer LastSelectMask);
 
-int EphyrValidateModes(ScrnInfoPtr pScrn);
-Bool EphyrAddMode(ScrnInfoPtr pScrn, int width, int height);
-void EphyrPrintPscreen(ScrnInfoPtr p);
-void EphyrPrintMode(ScrnInfoPtr p, DisplayModePtr m);
+int EPHYRValidateModes(ScrnInfoPtr pScrn);
+Bool EPHYRAddMode(ScrnInfoPtr pScrn, int width, int height);
+void EPHYRPrintPscreen(ScrnInfoPtr p);
+void EPHYRPrintMode(ScrnInfoPtr p, DisplayModePtr m);
 
 typedef enum {
     OPTION_DISPLAY,
@@ -105,7 +105,7 @@ typedef enum {
     EPHYR_CHIP
 } EphyrType;
 
-static SymTabRec EphyrChipsets[] = {
+static SymTabRec EPHYRChipsets[] = {
     { EPHYR_CHIP, "ephyr" },
     {-1,          NULL }
 };
@@ -113,7 +113,7 @@ static SymTabRec EphyrChipsets[] = {
 /* XXX: Shouldn't we allow EphyrClient to define options too? If some day we
  * port EphyrClient to something that's not Xlib/Xcb we might need to add some
  * custom options */
-static OptionInfoRec EphyrOptions[] = {
+static OptionInfoRec EPHYROptions[] = {
     { OPTION_DISPLAY,    "Display",    OPTV_STRING, {0}, FALSE },
     { OPTION_XAUTHORITY, "Xauthority", OPTV_STRING, {0}, FALSE },
     { OPTION_ORIGIN,     "Origin",     OPTV_STRING, {0}, FALSE },
@@ -123,12 +123,12 @@ static OptionInfoRec EphyrOptions[] = {
 _X_EXPORT DriverRec EPHYR = {
     EPHYR_VERSION,
     EPHYR_DRIVER_NAME,
-    EphyrIdentify,
-    EphyrProbe,
-    EphyrAvailableOptions,
+    EPHYRIdentify,
+    EPHYRProbe,
+    EPHYRAvailableOptions,
     NULL, /* module */
     0,    /* refCount */
-    EphyrDriverFunc,
+    EPHYRDriverFunc,
     NULL, /* DeviceMatch */
     0     /* PciProbe */
 };
@@ -137,13 +137,13 @@ _X_EXPORT InputDriverRec EPHYRINPUT = {
     1,
     "ephyrinput",
     NULL,
-    EphyrInputPreInit,
-    EphyrInputUnInit,
+    EPHYRInputPreInit,
+    EPHYRInputUnInit,
     NULL,
     0,
 };
 
-static XF86ModuleVersionInfo EphyrVersRec = {
+static XF86ModuleVersionInfo EPHYRVersRec = {
     EPHYR_DRIVER_NAME,
     MODULEVENDORSTRING,
     MODINFOSTRING1,
@@ -159,15 +159,15 @@ static XF86ModuleVersionInfo EphyrVersRec = {
 };
 
 _X_EXPORT XF86ModuleData ephyrModuleData = {
-    &EphyrVersRec,
-    EphyrSetup,
+    &EPHYRVersRec,
+    EPHYRSetup,
     NULL, /* teardown */
 };
 
 Bool enable_ephyr_input;
 
 static pointer
-EphyrSetup(pointer module, pointer opts, int *errmaj, int *errmin) {
+EPHYRSetup(pointer module, pointer opts, int *errmaj, int *errmin) {
     static Bool setupDone = FALSE;
 
     enable_ephyr_input = !SeatId;
@@ -192,18 +192,18 @@ EphyrSetup(pointer module, pointer opts, int *errmaj, int *errmin) {
 }
 
 static void
-EphyrIdentify(int flags) {
+EPHYRIdentify(int flags) {
     xf86PrintChipsets(EPHYR_NAME, "Driver for nested servers",
-                      EphyrChipsets);
+                      EPHYRChipsets);
 }
 
 static const OptionInfoRec *
-EphyrAvailableOptions(int chipid, int busid) {
-    return EphyrOptions;
+EPHYRAvailableOptions(int chipid, int busid) {
+    return EPHYROptions;
 }
 
 static Bool
-EphyrProbe(DriverPtr drv, int flags) {
+EPHYRProbe(DriverPtr drv, int flags) {
     Bool foundScreen = FALSE;
     int numDevSections;
     GDevPtr *devSections;
@@ -232,15 +232,15 @@ EphyrProbe(DriverPtr drv, int flags) {
                 pScrn->driverVersion = EPHYR_VERSION;
                 pScrn->driverName = EPHYR_DRIVER_NAME;
                 pScrn->name = EPHYR_NAME;
-                pScrn->Probe = EphyrProbe;
-                pScrn->PreInit = EphyrPreInit;
-                pScrn->ScreenInit = EphyrScreenInit;
-                pScrn->SwitchMode = EphyrSwitchMode;
-                pScrn->AdjustFrame = EphyrAdjustFrame;
-                pScrn->EnterVT = EphyrEnterVT;
-                pScrn->LeaveVT = EphyrLeaveVT;
-                pScrn->FreeScreen = EphyrFreeScreen;
-                pScrn->ValidMode = EphyrValidMode;
+                pScrn->Probe = EPHYRProbe;
+                pScrn->PreInit = EPHYRPreInit;
+                pScrn->ScreenInit = EPHYRScreenInit;
+                pScrn->SwitchMode = EPHYRSwitchMode;
+                pScrn->AdjustFrame = EPHYRAdjustFrame;
+                pScrn->EnterVT = EPHYREnterVT;
+                pScrn->LeaveVT = EPHYRLeaveVT;
+                pScrn->FreeScreen = EPHYRFreeScreen;
+                pScrn->ValidMode = EPHYRValidMode;
                 foundScreen = TRUE;
             }
         }
@@ -255,9 +255,9 @@ EphyrProbe(DriverPtr drv, int flags) {
 #endif
 
 static Bool
-EphyrDriverFunc(ScrnInfoPtr pScrn, xorgDriverFuncOp op, pointer ptr) {
+EPHYRDriverFunc(ScrnInfoPtr pScrn, xorgDriverFuncOp op, pointer ptr) {
     CARD32 *flag;
-    xf86Msg(X_INFO, "EphyrDriverFunc\n");
+    xf86Msg(X_INFO, "EPHYRDriverFunc\n");
 
     /* XXX implement */
     switch(op) {
@@ -274,9 +274,9 @@ EphyrDriverFunc(ScrnInfoPtr pScrn, xorgDriverFuncOp op, pointer ptr) {
 }
 
 static Bool
-EphyrAllocatePrivate(ScrnInfoPtr pScrn) {
+EPHYRAllocatePrivate(ScrnInfoPtr pScrn) {
     if (pScrn->driverPrivate != NULL) {
-        xf86Msg(X_WARNING, "EphyrAllocatePrivate called for an already "
+        xf86Msg(X_WARNING, "EPHYRAllocatePrivate called for an already "
                 "allocated private!\n");
         return FALSE;
     }
@@ -291,10 +291,10 @@ EphyrAllocatePrivate(ScrnInfoPtr pScrn) {
 }
 
 static void
-EphyrFreePrivate(ScrnInfoPtr pScrn) {
+EPHYRFreePrivate(ScrnInfoPtr pScrn) {
     if (pScrn->driverPrivate == NULL) {
         xf86DrvMsg(pScrn->scrnIndex, X_WARNING,
-                   "Double freeing EphyrPrivate!\n");
+                   "Double freeing EPHYRPrivate!\n");
         return;
     }
 
@@ -304,17 +304,17 @@ EphyrFreePrivate(ScrnInfoPtr pScrn) {
 
 /* Data from here is valid to all server generations */
 static Bool
-EphyrPreInit(ScrnInfoPtr pScrn, int flags) {
+EPHYRPreInit(ScrnInfoPtr pScrn, int flags) {
     const char *displayName = getenv("DISPLAY");
     char *originString = NULL;
 
-    xf86DrvMsg(pScrn->scrnIndex, X_INFO, "EphyrPreInit\n");
+    xf86DrvMsg(pScrn->scrnIndex, X_INFO, "EPHYRPreInit\n");
 
     if (flags & PROBE_DETECT) {
         return FALSE;
     }
 
-    if (!EphyrAllocatePrivate(pScrn)) {
+    if (!EPHYRAllocatePrivate(pScrn)) {
         xf86DrvMsg(pScrn->scrnIndex, X_ERROR, "Failed to allocate private\n");
         return FALSE;
     }
@@ -340,24 +340,24 @@ EphyrPreInit(ScrnInfoPtr pScrn, int flags) {
     pScrn->monitor = pScrn->confScreen->monitor; /* XXX */
 
     xf86CollectOptions(pScrn, NULL);
-    xf86ProcessOptions(pScrn->scrnIndex, pScrn->options, EphyrOptions);
+    xf86ProcessOptions(pScrn->scrnIndex, pScrn->options, EPHYROptions);
 
-    if (xf86IsOptionSet(EphyrOptions, OPTION_DISPLAY)) {
-        displayName = xf86GetOptValString(EphyrOptions,
+    if (xf86IsOptionSet(EPHYROptions, OPTION_DISPLAY)) {
+        displayName = xf86GetOptValString(EPHYROptions,
                                           OPTION_DISPLAY);
         xf86DrvMsg(pScrn->scrnIndex, X_INFO, "Using display \"%s\"\n",
                    displayName);
         setenv("DISPLAY", displayName, 1);
     }
 
-    if (xf86IsOptionSet(EphyrOptions, OPTION_XAUTHORITY)) {
+    if (xf86IsOptionSet(EPHYROptions, OPTION_XAUTHORITY)) {
         setenv("XAUTHORITY",
-               xf86GetOptValString(EphyrOptions,
+               xf86GetOptValString(EPHYROptions,
                                    OPTION_XAUTHORITY), 1);
     }
 
-    if (xf86IsOptionSet(EphyrOptions, OPTION_ORIGIN)) {
-        originString = xf86GetOptValString(EphyrOptions, OPTION_ORIGIN);
+    if (xf86IsOptionSet(EPHYROptions, OPTION_ORIGIN)) {
+        originString = xf86GetOptValString(EPHYROptions, OPTION_ORIGIN);
 
         if (sscanf(originString, "%d %d", &pScrn->frameX0,
                    &pScrn->frameY0) != 2) {
@@ -381,7 +381,7 @@ EphyrPreInit(ScrnInfoPtr pScrn, int flags) {
         return FALSE;
     }
 
-    if (EphyrValidateModes(pScrn) < 1) {
+    if (EPHYRValidateModes(pScrn) < 1) {
         xf86DrvMsg(pScrn->scrnIndex, X_ERROR, "No valid modes\n");
         return FALSE;
     }
@@ -409,7 +409,7 @@ EphyrPreInit(ScrnInfoPtr pScrn, int flags) {
 }
 
 int
-EphyrValidateModes(ScrnInfoPtr pScrn) {
+EPHYRValidateModes(ScrnInfoPtr pScrn) {
     DisplayModePtr mode;
     int i, width, height, ret = 0;
     int maxX = 0, maxY = 0;
@@ -439,12 +439,12 @@ EphyrValidateModes(ScrnInfoPtr pScrn) {
                 return 0;
             }
 
-            if (!EphyrAddMode(pScrn, width, height)) {
+            if (!EPHYRAddMode(pScrn, width, height)) {
                 return 0;
             }
         }
     } else {
-        if (!EphyrAddMode(pScrn, 640, 480)) {
+        if (!EPHYRAddMode(pScrn, 640, 480)) {
             return 0;
         }
     }
@@ -496,7 +496,7 @@ EphyrValidateModes(ScrnInfoPtr pScrn) {
 }
 
 Bool
-EphyrAddMode(ScrnInfoPtr pScrn, int width, int height) {
+EPHYRAddMode(ScrnInfoPtr pScrn, int width, int height) {
     DisplayModePtr mode;
     char nameBuf[64];
     size_t len;
@@ -532,37 +532,37 @@ EphyrAddMode(ScrnInfoPtr pScrn, int width, int height) {
     return TRUE;
 }
 
-/* Wrapper for timed call to EphyrInputLoadDriver. Used with timer in order
+/* Wrapper for timed call to EPHYRInputLoadDriver. Used with timer in order
  * to force the initialization to wait until the input core is initialized. */
 static CARD32
-EphyrMouseTimer(OsTimerPtr timer, CARD32 time, pointer arg) {
+EPHYRMouseTimer(OsTimerPtr timer, CARD32 time, pointer arg) {
     if (timer) {
         TimerFree(timer);
         timer = NULL;
     }
 
-    EphyrInputLoadDriver(arg);
+    EPHYRInputLoadDriver(arg);
     return 0;
 }
 
 static void
-EphyrBlockHandler(pointer data, OSTimePtr wt, pointer LastSelectMask) {
+EPHYRBlockHandler(pointer data, OSTimePtr wt, pointer LastSelectMask) {
     ephyrPoll();
 }
 
 static void
-EphyrWakeupHandler(pointer data, int i, pointer LastSelectMask) {
+EPHYRWakeupHandler(pointer data, int i, pointer LastSelectMask) {
 }
 
 /* Called at each server generation */
-static Bool EphyrScreenInit(SCREEN_INIT_ARGS_DECL) {
+static Bool EPHYRScreenInit(SCREEN_INIT_ARGS_DECL) {
     ScrnInfoPtr pScrn = xf86ScreenToScrn(pScreen);
     EphyrScrPrivPtr scrpriv;
     Pixel redMask, greenMask, blueMask;
 
-    xf86DrvMsg(pScrn->scrnIndex, X_INFO, "EphyrScreenInit\n");
+    xf86DrvMsg(pScrn->scrnIndex, X_INFO, "EPHYRScreenInit\n");
     scrpriv = pScrn->driverPrivate;
-    EphyrPrintPscreen(pScrn);
+    EPHYRPrintPscreen(pScrn);
     
     if (!hostx_init_window(scrpriv)) {
         return FALSE;
@@ -584,10 +584,10 @@ static Bool EphyrScreenInit(SCREEN_INIT_ARGS_DECL) {
     }
     */
     
-    /* Schedule the EphyrInputLoadDriver function to load once the
+    /* Schedule the EPHYRInputLoadDriver function to load once the
      * input core is initialized. */
     if (enable_ephyr_input) {
-       TimerSet(NULL, 0, 1, EphyrMouseTimer, scrpriv);
+       TimerSet(NULL, 0, 1, EPHYRMouseTimer, scrpriv);
     }
 
     miClearVisualTypes();
@@ -619,35 +619,35 @@ static Bool EphyrScreenInit(SCREEN_INIT_ARGS_DECL) {
         return FALSE;
     }
 
-    scrpriv->update = EphyrShadowUpdate;
-    pScreen->SaveScreen = EphyrSaveScreen;
+    scrpriv->update = EPHYRShadowUpdate;
+    pScreen->SaveScreen = EPHYRSaveScreen;
 
     if (!shadowSetup(pScreen)) {
         return FALSE;
     }
 
     scrpriv->CreateScreenResources = pScreen->CreateScreenResources;
-    pScreen->CreateScreenResources = EphyrCreateScreenResources;
+    pScreen->CreateScreenResources = EPHYRCreateScreenResources;
     scrpriv->CloseScreen = pScreen->CloseScreen;
-    pScreen->CloseScreen = EphyrCloseScreen;
-    RegisterBlockAndWakeupHandlers(EphyrBlockHandler, EphyrWakeupHandler, scrpriv);
+    pScreen->CloseScreen = EPHYRCloseScreen;
+    RegisterBlockAndWakeupHandlers(EPHYRBlockHandler, EPHYRWakeupHandler, scrpriv);
     return TRUE;
 }
 
 static Bool
-EphyrCreateScreenResources(ScreenPtr pScreen) {
-    xf86DrvMsg(pScreen->myNum, X_INFO, "EphyrCreateScreenResources\n");
+EPHYRCreateScreenResources(ScreenPtr pScreen) {
+    xf86DrvMsg(pScreen->myNum, X_INFO, "EPHYRCreateScreenResources\n");
     ScrnInfoPtr pScrn = xf86ScreenToScrn(pScreen);
     EphyrScrPrivPtr scrpriv = pScrn->driverPrivate;
     Bool ret;
 
     pScreen->CreateScreenResources = scrpriv->CreateScreenResources;
     ret = pScreen->CreateScreenResources(pScreen);
-    pScreen->CreateScreenResources = EphyrCreateScreenResources;
+    pScreen->CreateScreenResources = EPHYRCreateScreenResources;
 
     if(!shadowAdd(pScreen, pScreen->GetScreenPixmap(pScreen),
                   scrpriv->update, NULL, 0, 0)) {
-        xf86DrvMsg(pScreen->myNum, X_ERROR, "EphyrCreateScreenResources failed to shadowAdd.\n");
+        xf86DrvMsg(pScreen->myNum, X_ERROR, "EPHYRCreateScreenResources failed to shadowAdd.\n");
         return FALSE;
     }
 
@@ -655,7 +655,7 @@ EphyrCreateScreenResources(ScreenPtr pScreen) {
 }
 
 static void
-EphyrShadowUpdate(ScreenPtr pScreen, shadowBufPtr pBuf) {
+EPHYRShadowUpdate(ScreenPtr pScreen, shadowBufPtr pBuf) {
     ScrnInfoPtr pScrn = xf86ScreenToScrn(pScreen);
     EphyrScrPrivPtr scrpriv = pScrn->driverPrivate;
 
@@ -667,55 +667,55 @@ EphyrShadowUpdate(ScreenPtr pScreen, shadowBufPtr pBuf) {
 }
 
 static Bool
-EphyrCloseScreen(CLOSE_SCREEN_ARGS_DECL) {
+EPHYRCloseScreen(CLOSE_SCREEN_ARGS_DECL) {
     ScrnInfoPtr pScrn = xf86ScreenToScrn(pScreen);
     EphyrScrPrivPtr scrpriv = pScrn->driverPrivate;
 
-    xf86DrvMsg(pScrn->scrnIndex, X_INFO, "EphyrCloseScreen\n");
+    xf86DrvMsg(pScrn->scrnIndex, X_INFO, "EPHYRCloseScreen\n");
     shadowRemove(pScreen, pScreen->GetScreenPixmap(pScreen));
-    RemoveBlockAndWakeupHandlers(EphyrBlockHandler, EphyrWakeupHandler, scrpriv);
+    RemoveBlockAndWakeupHandlers(EPHYRBlockHandler, EPHYRWakeupHandler, scrpriv);
     /* XXX: replace with Xephyr corresponding function */
-    EphyrClientCloseScreen(scrpriv);
+    EPHYRClientCloseScreen(scrpriv);
     pScreen->CloseScreen = scrpriv->CloseScreen;
     return (*pScreen->CloseScreen)(CLOSE_SCREEN_ARGS);
 }
 
-static Bool EphyrSaveScreen(ScreenPtr pScreen, int mode) {
-    xf86DrvMsg(pScreen->myNum, X_INFO, "EphyrSaveScreen\n");
+static Bool EPHYRSaveScreen(ScreenPtr pScreen, int mode) {
+    xf86DrvMsg(pScreen->myNum, X_INFO, "EPHYRSaveScreen\n");
     return TRUE;
 }
 
-static Bool EphyrSwitchMode(SWITCH_MODE_ARGS_DECL) {
+static Bool EPHYRSwitchMode(SWITCH_MODE_ARGS_DECL) {
     SCRN_INFO_PTR(arg);
-    xf86DrvMsg(pScrn->scrnIndex, X_INFO, "EphyrSwitchMode\n");
+    xf86DrvMsg(pScrn->scrnIndex, X_INFO, "EPHYRSwitchMode\n");
     return TRUE;
 }
 
-static void EphyrAdjustFrame(ADJUST_FRAME_ARGS_DECL) {
+static void EPHYRAdjustFrame(ADJUST_FRAME_ARGS_DECL) {
     SCRN_INFO_PTR(arg);
-    xf86DrvMsg(pScrn->scrnIndex, X_INFO, "EphyrAdjustFrame\n");
+    xf86DrvMsg(pScrn->scrnIndex, X_INFO, "EPHYRAdjustFrame\n");
 }
 
-static Bool EphyrEnterVT(VT_FUNC_ARGS_DECL) {
+static Bool EPHYREnterVT(VT_FUNC_ARGS_DECL) {
     SCRN_INFO_PTR(arg);
-    xf86DrvMsg(pScrn->scrnIndex, X_INFO, "EphyrEnterVT\n");
+    xf86DrvMsg(pScrn->scrnIndex, X_INFO, "EPHYREnterVT\n");
     return TRUE;
 }
 
-static void EphyrLeaveVT(VT_FUNC_ARGS_DECL) {
+static void EPHYRLeaveVT(VT_FUNC_ARGS_DECL) {
     SCRN_INFO_PTR(arg);
-    xf86DrvMsg(pScrn->scrnIndex, X_INFO, "EphyrLeaveVT\n");
+    xf86DrvMsg(pScrn->scrnIndex, X_INFO, "EPHYRLeaveVT\n");
 }
 
-static void EphyrFreeScreen(FREE_SCREEN_ARGS_DECL) {
+static void EPHYRFreeScreen(FREE_SCREEN_ARGS_DECL) {
     SCRN_INFO_PTR(arg);
-    xf86DrvMsg(pScrn->scrnIndex, X_INFO, "EphyrFreeScreen\n");
+    xf86DrvMsg(pScrn->scrnIndex, X_INFO, "EPHYRFreeScreen\n");
 }
 
-static ModeStatus EphyrValidMode(SCRN_ARG_TYPE arg, DisplayModePtr mode,
+static ModeStatus EPHYRValidMode(SCRN_ARG_TYPE arg, DisplayModePtr mode,
                                   Bool verbose, int flags) {
     SCRN_INFO_PTR(arg);
-    xf86DrvMsg(pScrn->scrnIndex, X_INFO, "EphyrValidMode:\n");
+    xf86DrvMsg(pScrn->scrnIndex, X_INFO, "EPHYRValidMode:\n");
 
     if (!mode) {
         xf86DrvMsg(pScrn->scrnIndex, X_ERROR, "NULL MODE!\n");
@@ -727,7 +727,7 @@ static ModeStatus EphyrValidMode(SCRN_ARG_TYPE arg, DisplayModePtr mode,
     return MODE_OK;
 }
 
-void EphyrPrintPscreen(ScrnInfoPtr p) {
+void EPHYRPrintPscreen(ScrnInfoPtr p) {
     /* XXX: finish implementing this someday? */
     xf86DrvMsg(p->scrnIndex, X_INFO, "Printing pScrn:\n");
     xf86DrvMsg(p->scrnIndex, X_INFO, "driverVersion: %d\n", p->driverVersion);
@@ -746,12 +746,12 @@ void EphyrPrintPscreen(ScrnInfoPtr p) {
     xf86DrvMsg(p->scrnIndex, X_INFO, "bitsPerPixel: %d\n", p->bitsPerPixel);
     /*xf86DrvMsg(p->scrnIndex, X_INFO, "pixmap24: 0x%x\n"); */
     xf86DrvMsg(p->scrnIndex, X_INFO, "depth: %d\n", p->depth);
-    EphyrPrintMode(p, p->currentMode);
+    EPHYRPrintMode(p, p->currentMode);
     /*xf86DrvMsg(p->scrnIndex, X_INFO, "depthFrom: %\n");
     xf86DrvMsg(p->scrnIndex, X_INFO, "\n");*/
 }
 
-void EphyrPrintMode(ScrnInfoPtr p, DisplayModePtr m) {
+void EPHYRPrintMode(ScrnInfoPtr p, DisplayModePtr m) {
     xf86DrvMsg(p->scrnIndex, X_INFO, "HDisplay   %d\n", m->HDisplay);
     xf86DrvMsg(p->scrnIndex, X_INFO, "HSyncStart %d\n", m->HSyncStart);
     xf86DrvMsg(p->scrnIndex, X_INFO, "HSyncEnd   %d\n", m->HSyncEnd);
