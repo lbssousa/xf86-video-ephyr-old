@@ -702,7 +702,7 @@ static void EPHYRFreeScreen(FREE_SCREEN_ARGS_DECL) {
 }
 
 static ModeStatus EPHYRValidMode(SCRN_ARG_TYPE arg, DisplayModePtr mode,
-                                  Bool verbose, int flags) {
+                                 Bool verbose, int flags) {
     SCRN_INFO_PTR(arg);
     xf86DrvMsg(pScrn->scrnIndex, X_INFO, "EPHYRValidMode:\n");
 

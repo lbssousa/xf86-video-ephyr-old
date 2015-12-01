@@ -52,7 +52,7 @@
 #include "config.h"
 #endif
 
-#include "client.h"
+#include "hostx.h"
 #include "ephyr_input.h"
 
 #define SYSCALL(call) while (((call) == -1) && (errno == EINTR))
@@ -133,7 +133,7 @@ EPHYRInputUpdateKeymap(DeviceIntPtr device) {
     XkbControlsRec ctrls;
     CARD8 modmap[MAP_LENGTH];
 
-    if(!EphyrClientGetKeyboardMappings(pEphyrInput->clientData, &keySyms, modmap, &ctrls)) {
+    if(!hostx_load_keymap(&keySyms, modmap, &ctrls)) {
         xf86Msg(X_ERROR, "%s: Failed to get keyboard mappings.\n", pInfo->name);
         return;
     }
