@@ -564,7 +564,9 @@ hostx_init(void) {
 }
 
 Bool
-hostx_init_window(EphyrScrPrivPtr scrpriv) {
+hostx_init_window(ScrnInfoPtr pScrn) {
+    EphyrScrPrivPtr scrpriv = pScrn->driverPrivate;
+
     scrpriv->win = xcb_generate_id(HostX.conn);
     scrpriv->server_depth = HostX.depth;
     scrpriv->ximg = NULL;

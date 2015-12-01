@@ -363,6 +363,12 @@ EPHYRPreInit(ScrnInfoPtr pScrn, int flags) {
                    displayName);
         return FALSE;
     }
+    
+    if (!hostx_init_window(pScrn)) {
+        xf86DrvMsg(pScrn->scrnIndex, X_ERROR, "Can't create window on display: %s\n",
+                   displayName);
+        return FALSE;
+    }
 
     if (EPHYRValidateModes(pScrn) < 1) {
         xf86DrvMsg(pScrn->scrnIndex, X_ERROR, "No valid modes\n");
@@ -547,10 +553,7 @@ static Bool EPHYRScreenInit(SCREEN_INIT_ARGS_DECL) {
     xf86DrvMsg(pScrn->scrnIndex, X_INFO, "EPHYRScreenInit\n");
     scrpriv = pScrn->driverPrivate;
     EPHYRPrintPscreen(pScrn);
-    
-    if (!hostx_init_window(scrpriv)) {
-        return FALSE;
-    }
+
     /* XXX: replace with Xephyr corresponding function
     scrpriv->clientData = EphyrClientCreateScreen(pScrn->scrnIndex,
                                                  pScrn->virtualX,
