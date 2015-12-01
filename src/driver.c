@@ -664,8 +664,7 @@ EPHYRCloseScreen(CLOSE_SCREEN_ARGS_DECL) {
     xf86DrvMsg(pScrn->scrnIndex, X_INFO, "EPHYRCloseScreen\n");
     shadowRemove(pScreen, pScreen->GetScreenPixmap(pScreen));
     RemoveBlockAndWakeupHandlers(EPHYRBlockHandler, EPHYRWakeupHandler, scrpriv);
-    /* XXX: replace with Xephyr corresponding function */
-    EPHYRClientCloseScreen(scrpriv);
+    hostx_close_screen(pScrn);
     pScreen->CloseScreen = scrpriv->CloseScreen;
     return (*pScreen->CloseScreen)(CLOSE_SCREEN_ARGS);
 }

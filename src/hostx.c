@@ -766,6 +766,22 @@ hostx_set_cmap_entry(ScreenPtr pScreen, unsigned char idx,
                          ((b << bshift) & HostX.visual->blue_mask);
 }
 
+void
+hostx_close_screen(ScrnInfoPtr screen) {
+    EphyrScrPriv *scrpriv = screen->driverPrivate;
+
+    if (HostX.have_shm) {
+        xcb_shm_detach(HostX.conn, scrpriv->shminfo.shmseg);
+        shmdt(scrpriv->shminfo.shmaddr);
+        shmctl(scrpriv->shminfo.shmid, IPC_RMID, 0);
+    } else {
+        free(scrpriv->ximg->data);
+        scrpriv->ximg->data = NULL;
+    }
+
+    xcb_image_destroy(scrpriv->ximg);
+}
+
 /**
  * hostx_screen_init creates the XImage that will contain the front buffer of
  * the ephyr screen, and possibly offscreen memory.
@@ -798,17 +814,7 @@ hostx_screen_init(ScrnInfoPtr screen,
         /* Free up the image data if previously used
          * i.ie called by server reset
          */
-
-        if (HostX.have_shm) {
-            xcb_shm_detach(HostX.conn, scrpriv->shminfo.shmseg);
-            xcb_image_destroy(scrpriv->ximg);
-            shmdt(scrpriv->shminfo.shmaddr);
-            shmctl(scrpriv->shminfo.shmid, IPC_RMID, 0);
-        } else {
-            free(scrpriv->ximg->data);
-            scrpriv->ximg->data = NULL;
-            xcb_image_destroy(scrpriv->ximg);
-        }
+        hostx_close_screen(screen);
     }
 
     if (!ephyr_glamor && HostX.have_shm) {
