@@ -298,8 +298,7 @@ ephyrUnmapFramebuffer(KdScreenInfo * screen)
 void
 ephyrShadowUpdate(ScreenPtr pScreen, shadowBufPtr pBuf)
 {
-    KdScreenPriv(pScreen);
-    KdScreenInfo *screen = pScreenPriv->screen;
+    ScrnInfoPtr screen = xf86ScreenToScrn(pScreen);
 
     EPHYR_LOG("slow paint");
 

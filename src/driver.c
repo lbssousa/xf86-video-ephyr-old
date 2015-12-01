@@ -542,6 +542,7 @@ static Bool EPHYRScreenInit(SCREEN_INIT_ARGS_DECL) {
     ScrnInfoPtr pScrn = xf86ScreenToScrn(pScreen);
     EphyrScrPrivPtr scrpriv;
     Pixel redMask, greenMask, blueMask;
+    char *fb_data;
 
     xf86DrvMsg(pScrn->scrnIndex, X_INFO, "EPHYRScreenInit\n");
     scrpriv = pScrn->driverPrivate;
@@ -586,8 +587,17 @@ static Bool EPHYRScreenInit(SCREEN_INIT_ARGS_DECL) {
         return FALSE;
     }
 
-    /* XXX: replace with Xephyr corresponding function */
-    if (!fbScreenInit(pScreen, EphyrClientGetFrameBuffer(scrpriv),
+    /* XXX: Shouldn't we call ephyrMapFramebuffer()
+     * instead of hostx_screen_init() here? */
+    fb_data = hostx_screen_init(pScrn,
+                                pScrn->frameX0, pScrn->frameY0,
+                                pScrn->VirtualX, pScrn->VirtualY,
+                                ephyrBufferHeight(pScrn),
+                                NULL, /* bytes per line/row (not used) */
+                                &pScrn->bitsPerPixel);
+
+    if (!fbScreenInit(pScreen,
+                      fb_data,
                       pScrn->virtualX, pScrn->virtualY, pScrn->xDpi,
                       pScrn->yDpi, pScrn->displayWidth, pScrn->bitsPerPixel)) {
         return FALSE;
@@ -639,14 +649,8 @@ EPHYRCreateScreenResources(ScreenPtr pScreen) {
 
 static void
 EPHYRShadowUpdate(ScreenPtr pScreen, shadowBufPtr pBuf) {
-    ScrnInfoPtr pScrn = xf86ScreenToScrn(pScreen);
-    EphyrScrPrivPtr scrpriv = pScrn->driverPrivate;
-
-    RegionPtr pRegion = DamageRegion(pBuf->pDamage);
-    /* XXX: replace with Xephyr corresponding function */
-    EphyrClientUpdateScreen(scrpriv,
-                            pRegion->extents.x1, pRegion->extents.y1,
-                            pRegion->extents.x2, pRegion->extents.y2);
+    /* Just call ephyr corresponding function. */
+    ephyrShadowUpdate(pScreen, pBuf);
 }
 
 static Bool
